@@ -198,18 +198,11 @@ def gerenciar_configuracoes():
         
     return jsonify({"status": "success", "config": config_dict})
 
-@app.route('/api/listar', methods=['GET'])
-def listar_orcamentos():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    try:
-        cursor.execute("SELECT * FROM orcamentos ORDER BY id DESC")
-        rows = cursor.fetchall()
-        return jsonify([dict(r) for r in rows])
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        conn.close()
+@app.route('/api/servicos/listar', methods=['GET'])
+def listar_servicos():
+    # Retorna uma lista vazia ou dados mockados se a tabela de serviços não existir
+    # Ajuste conforme a estrutura da sua tabela ou arquivo JSON de serviços
+    return jsonify({"status": "success", "servicos": []})
 
 @app.route('/api/salvar', methods=['POST'])
 def salvar_orcamento():
