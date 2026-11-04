@@ -420,16 +420,18 @@
                         </div>
                     </div>
 
-                    <!-- ETAPA 2: CABEÇALHO RESPONSIVO -->
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <!-- ETAPA 2 -->
+                    <div id="etapa-conteudo-2" class="hidden bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl space-y-4 no-print shadow-sm">
+                        <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                            <!-- Título Preto Solicitado -->
                             <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                 <i class="fa-solid fa-list-check text-gold-500"></i> 2. Serviços e Locais/Áreas
                             </h4>
-                            <div class="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto">
-                                <button onclick="abrirModalBibliotecaServicos()" class="flex-1 sm:flex-none justify-center bg-slate-100 dark:bg-navy-950 hover:bg-slate-800 hover:text-white text-gold-600 border border-gold-500/30 font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95">
-                                    <i class="fa-solid fa-book-bookmark"></i> Pré-Cadastrados
+                            <div class="flex gap-2">
+                                <button onclick="abrirModalBibliotecaServicos()" class="bg-slate-100 dark:bg-navy-950 hover:bg-slate-800 hover:text-white text-gold-600 border border-gold-500/30 font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm">
+                                    <i class="fa-solid fa-book-bookmark"></i> Serviços Pré-Cadastrados
                                 </button>
-                                <button onclick="adicionarNovoItemServico()" class="flex-1 sm:flex-none justify-center bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm active:scale-95">
+                                <button onclick="adicionarNovoItemServico()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm">
                                     <i class="fa-solid fa-plus"></i> Adicionar Item
                                 </button>
                             </div>
