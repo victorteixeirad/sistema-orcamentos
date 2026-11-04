@@ -321,18 +321,9 @@ function salvarServicoMaster() {
         }
     })
     .catch(err => {
-        console.error("Erro na API de serviços:", err);
-        if (id) {
-            const idx = bibliotecaServicos.findIndex(s => s.id === id);
-            if (idx !== -1) bibliotecaServicos[idx] = { id, area, description, unit, price };
-        } else {
-            const novoId = bibliotecaServicos.length > 0 ? Math.max(...bibliotecaServicos.map(s => s.id)) + 1 : 1;
-            bibliotecaServicos.push({ id: novoId, area, description, unit, price });
-        }
-        limparFormServicoMaster();
-        renderizarTabelaServicosMaster();
-        alert("✅ Serviço salvo com sucesso!");
-    });
+    console.error("Erro ao salvar serviço:", err);
+    alert("❌ Não foi possível salvar o serviço no servidor. Verifique a conexão e tente novamente.");
+});
 }
 
 function prepararEdicaoServicoMaster(id) {

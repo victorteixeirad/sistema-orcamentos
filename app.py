@@ -29,6 +29,15 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS servicos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        area TEXT NOT NULL,
+        description TEXT NOT NULL,
+        unit TEXT DEFAULT 'm²',
+        price REAL DEFAULT 0
+    )
+""")
     cursor = conn.cursor()
     
     if DATABASE_URL:
@@ -333,6 +342,130 @@ def obter_orcamento(orc_number):
         return jsonify({"status": "error", "message": "Orçamento não encontrado"}), 404
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        conn.close()
+
+@app.route('/api/servicos/listar', methods=['GET'])
+def listar_servicos():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM servicos ORDER BY area ASC, id ASC")
+        servicos = [dict(row) for row in cursor.fetchall()]
+
+        return jsonify({
+            "status": "success",
+            "servicos": servicos
+        })
+
+    except sqlite3.Error as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+    finally:
+        conn.close()
+
+
+@app.route('/api/servicos/salvar', methods=['POST'])
+def salvar_servico():
+    dados = request.get_json(silent=True) or {}
+
+    area = (dados.get('area') or '').strip()
+    description = (dados.get('description') or '').strip()
+    unit = dados.get('unit') or 'm²'
+
+    try:
+        price = float(dados.get('price') or 0)
+        servico_id = dados.get('id')
+
+        if not area or not description:
+            return jsonify({
+                "status": "error",
+                "message": "Área e descrição são obrigatórias."
+            }), 400
+
+        conn = sqlite3.connect(DB_NAME)
+        cursor = conn.cursor()
+
+        if servico_id:
+            cursor.execute("""
+                UPDATE servicos
+                SET area = ?, description = ?, unit = ?, price = ?
+                WHERE id = ?
+            """, (area, description, unit, price, servico_id))
+
+            if cursor.rowcount == 0:
+                conn.close()
+                return jsonify({
+                    "status": "error",
+                    "message": "Serviço não encontrado."
+                }), 404
+
+        else:
+            cursor.execute("""
+                INSERT INTO servicos (area, description, unit, price)
+                VALUES (?, ?, ?, ?)
+            """, (area, description, unit, price))
+
+        conn.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "Serviço salvo com sucesso!"
+        })
+
+    except (ValueError, TypeError):
+        return jsonify({
+            "status": "error",
+            "message": "Preço inválido."
+        }), 400
+
+    except sqlite3.Error as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+    finally:
+        if 'conn' in locals():
+            conn.close()
+
+
+@app.route('/api/servicos/deletar/<int:servico_id>', methods=['DELETE'])
+def deletar_servico(servico_id):
+    conn = sqlite3.connect(DB_NAME)
+
+    try:
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "DELETE FROM servicos WHERE id = ?",
+            (servico_id,)
+        )
+
+        if cursor.rowcount == 0:
+            return jsonify({
+                "status": "error",
+                "message": "Serviço não encontrado."
+            }), 404
+
+        conn.commit()
+
+        return jsonify({
+            "status": "success",
+            "message": "Serviço excluído com sucesso!"
+        })
+
+    except sqlite3.Error as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
     finally:
         conn.close()
 
