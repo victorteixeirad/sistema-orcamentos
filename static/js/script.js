@@ -511,11 +511,10 @@ function carregarAbaAtividades() {
         container.innerHTML = '';
 
         if (!data || data.length === 0) {
-            container.innerHTML = `<p class="text-xs text-slate-500 italic">Nenhuma atividade registrada.</p>`;
-            return;
+            container.innerHTML = `<p class="text-xs text-slate-500 italic">Nenhum orçamento ativo no momento.</p>`;
         }
 
-        data.forEach(item => {
+        (data || []).forEach(item => {
             const div = document.createElement('div');
             div.className = "bg-white dark:bg-navy-950 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1.5 shadow-sm";
             
@@ -530,6 +529,15 @@ function carregarAbaAtividades() {
             `;
             container.appendChild(div);
         });
+        fetch('/api/atividades/auditoria').then(r => r.json()).then(eventos => {
+            (eventos || []).forEach(ev => {
+                const div = document.createElement('div');
+                div.className = "bg-rose-500/5 p-3.5 rounded-xl border border-rose-500/20 space-y-1.5";
+                const data = ev.criado_em || '';
+                div.innerHTML = `<div class="flex justify-between items-center gap-2 text-xs"><span class="font-bold text-rose-600 dark:text-rose-400"><i class="fa-solid fa-trash-can mr-1"></i>${ev.orc_number || 'Registro'} · ${ev.descricao || 'Atividade'}</span><span class="text-[10px] text-slate-500">${data}</span></div><p class="text-[11px] text-slate-600 dark:text-slate-300">Cliente: <b>${ev.cliente || '---'}</b> · Obra: <b>${ev.obra || '---'}</b> · Valor registrado: <b>${formatarMoeda(ev.valor || 0)}</b></p>`;
+                container.appendChild(div);
+            });
+        }).catch(e => console.error('Erro ao carregar auditoria:', e));
     })
     .catch(err => console.error("Erro ao carregar atividades:", err));
 }
@@ -565,6 +573,8 @@ function executarAlteracaoStatus(orcNumber, novoStatus) {
 
 function abrirWizardNovoOrcamentoLimpo() {
     orcamentoAtualNumero = null;
+    const statusInicial = document.getElementById('orcStatusSelect');
+    if (statusInicial) { statusInicial.disabled = false; statusInicial.value = 'Enviado'; }
     aplicarModoSomenteLeituraAprovado(false);
     const visaoLista = document.getElementById('visao-lista-orcamentos');
     const visaoWizard = document.getElementById('visao-wizard-orcamento');
@@ -1121,7 +1131,11 @@ function salvarOrcamentoNoBancoSilencioso() {
     });
 }
 
-function executarSalvamentoAPI(callbackSucesso) {
+function executarSalvamentoAPI(callbackSucesso, confirmadoAprovacao = false) {
+    if (!orcamentoAtualNumero && document.getElementById('orcStatusSelect')?.value === 'Aprovado' && !confirmadoAprovacao) {
+        abrirModalConfirmacao('Concluir e bloquear orçamento?', 'Este orçamento será salvo diretamente como Aprovado e ficará bloqueado para edições comerciais. Deseja continuar?', 'fa-solid fa-lock text-amber-500 text-3xl', 'Salvar aprovado', () => executarSalvamentoAPI(callbackSucesso, true));
+        return;
+    }
     if (modoSomenteLeituraAprovado) { alert('Este orçamento está aprovado e não pode mais ser editado. Use apenas o campo de comentários.'); return; }
     const orcNumEl = document.getElementById('previewOrcNumber');
     const orcNum = orcNumEl ? orcNumEl.innerText : 'ORC-2026-0001';
@@ -1313,6 +1327,7 @@ function renderizarListaTabelaOrcamentos(lista) {
                 <div class="text-[9px] text-slate-400 mt-0.5">${item.status_updated_at || item.created_at || ''}</div>
             </td>
             <td class="py-3 px-3 text-center flex justify-center gap-1.5">
+                <button onclick="abrirFinanceiroOrcamento('${item.orc_number}')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2.5 py-1.5 rounded-xl text-[11px] transition shadow-sm" title="Controle financeiro"><i class="fa-solid fa-wallet"></i> Financeiro</button>
                 <button onclick="carregarOrcamentoParaEdicao('${item.orc_number}')" class="bg-slate-100 dark:bg-slate-800 hover:bg-gold-600 hover:text-white text-slate-700 dark:text-slate-200 font-bold px-3 py-1.5 rounded-xl text-[11px] transition shadow-sm">
                     <i class="fa-solid fa-folder-open"></i> Abrir
                 </button>
@@ -1327,12 +1342,14 @@ function renderizarListaTabelaOrcamentos(lista) {
 
 function filtrarTabelaGeralOrcamentos(termo) {
     if (!window.todosOrcamentosCache) return;
-    const t = termo.toLowerCase();
-    const filtrados = window.todosOrcamentosCache.filter(item => 
-        (item.orc_number && item.orc_number.toLowerCase().includes(t)) ||
-        (item.obra_name && item.obra_name.toLowerCase().includes(t)) ||
-        (item.client_name && item.client_name.toLowerCase().includes(t))
-    );
+    const t = String(termo || '').toLowerCase();
+    const status = document.getElementById('filtroStatusOrcamentos')?.value || '';
+    const filtrados = window.todosOrcamentosCache.filter(item => {
+        const texto = (item.orc_number && item.orc_number.toLowerCase().includes(t)) ||
+            (item.obra_name && item.obra_name.toLowerCase().includes(t)) ||
+            (item.client_name && item.client_name.toLowerCase().includes(t));
+        return texto && (!status || item.status === status);
+    });
     renderizarListaTabelaOrcamentos(filtrados);
 }
 
@@ -1414,8 +1431,30 @@ function carregarResumoDashboard() {
         atualizarBarraFunil('recusado', recusados.length, somaRecusado, totalCarteira);
 
         renderizarGraficoCarteira(data, periodo);
+        carregarResumoFinanceiroDashboard();
     })
     .catch(err => console.error('Erro ao carregar dashboard:', err));
+}
+
+function carregarResumoFinanceiroDashboard() {
+    fetch('/api/dashboard/financeiro').then(r => r.json()).then(d => {
+        if (d.status !== 'success') return;
+        const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        set('dash-fin-recebido', formatarMoeda(d.total_recebido || 0));
+        set('dash-fin-pendente', formatarMoeda(d.total_a_receber || 0));
+        set('dash-fin-parciais', d.parcialmente_pagos || 0);
+        set('dash-fin-quitados', d.quitados || 0);
+        const box = document.getElementById('dash-fin-grafico');
+        if (!box) return;
+        const meses = d.recebimentos_mensais || [];
+        if (!meses.length) { box.innerHTML = '<p class="text-xs text-slate-400 col-span-full">Ainda não há recebimentos registrados.</p>'; return; }
+        const max = Math.max(...meses.map(x => Number(x.total) || 0), 1);
+        box.innerHTML = meses.map(x => {
+            const v = Number(x.total) || 0; const pct = Math.max(4, (v / max) * 100);
+            const [a,m] = String(x.mes || '').split('-'); const label = m ? new Date(Number(a), Number(m)-1, 1).toLocaleDateString('pt-BR',{month:'short'}) : x.mes;
+            return `<div class="flex flex-col items-center justify-end gap-1 h-[112px] min-w-0" title="${label}: ${formatarMoeda(v)}"><span class="text-[9px] text-slate-500 truncate w-full text-center">${formatarMoeda(v).replace(',00','')}</span><div class="w-full max-w-[34px] rounded-t-md bg-emerald-500/80 hover:bg-emerald-500 transition" style="height:${pct}%"></div><span class="text-[10px] text-slate-500 capitalize">${label}</span></div>`;
+        }).join('');
+    }).catch(e => console.error('Erro no resumo financeiro:', e));
 }
 
 function atualizarBarraFunil(tipo, qtd, valor, max) {
@@ -1589,4 +1628,136 @@ function fecharGavetaDashboard() {
     setTimeout(() => {
         drawer.classList.add('hidden');
     }, 300);
+}
+
+// ============================================================
+// CONTROLE FINANCEIRO POR ORÇAMENTO
+// Os recebimentos são registros independentes da condição prevista.
+let financeiroOrcamentoAtual = null;
+let pagamentoEmEdicaoId = null;
+let saldoAtualFinanceiro = 0;
+
+function abrirFinanceiroOrcamento(orcNumber) {
+    financeiroOrcamentoAtual = orcNumber;
+    cancelarEdicaoRecebimento();
+    const modal = document.getElementById('modalFinanceiroOrcamento');
+    if (modal) modal.classList.remove('hidden');
+    const data = document.getElementById('finData');
+    if (data) data.value = new Date().toISOString().slice(0, 10);
+    carregarFinanceiroOrcamento();
+}
+
+function fecharFinanceiroOrcamento() {
+    document.getElementById('modalFinanceiroOrcamento')?.classList.add('hidden');
+    financeiroOrcamentoAtual = null;
+}
+
+async function carregarFinanceiroOrcamento() {
+    if (!financeiroOrcamentoAtual) return;
+    const historico = document.getElementById('finHistorico');
+    if (historico) historico.textContent = 'Carregando...';
+    try {
+        const resposta = await fetch(`/api/financeiro/${encodeURIComponent(financeiroOrcamentoAtual)}`);
+        const dados = await resposta.json();
+        if (!resposta.ok || dados.status !== 'success') throw new Error(dados.message || 'Falha ao carregar financeiro.');
+        const moeda = valor => formatarMoeda(Number(valor) || 0);
+        document.getElementById('finTitulo').textContent = `Orçamento #${dados.orcamento.orc_number}`;
+        document.getElementById('finCliente').textContent = `${dados.orcamento.obra_name || 'Obra'} · ${dados.orcamento.client_name || 'Cliente'} · Status: ${dados.orcamento.status || '—'}`;
+        document.getElementById('finPercentual').textContent = `${Number(dados.percentual).toFixed(1).replace('.', ',')}%`;
+        document.getElementById('finBarra').style.width = `${dados.percentual}%`;
+        document.getElementById('finTotal').textContent = moeda(dados.total);
+        document.getElementById('finRecebido').textContent = moeda(dados.recebido);
+        document.getElementById('finSaldo').textContent = moeda(dados.saldo);
+        document.getElementById('finEntradaPrevista').textContent = moeda(dados.entrada_prevista);
+        const situacao = document.getElementById('finSituacao');
+        situacao.textContent = dados.saldo <= 0.005 ? 'Quitado' : dados.recebido > 0 ? 'Parcialmente pago' : 'Pendente';
+        situacao.className = `text-xs font-bold px-3 py-1 rounded-full ${dados.saldo <= 0.005 ? 'bg-emerald-500/10 text-emerald-600' : dados.recebido > 0 ? 'bg-amber-500/10 text-amber-600' : 'bg-orange-500/10 text-orange-600'}`;
+        saldoAtualFinanceiro = Math.max(0, Number(dados.saldo) || 0);
+        const lista = dados.pagamentos || [];
+        historico.innerHTML = lista.length ? lista.map(p => `
+            <div class="border-b border-slate-200 dark:border-slate-700 pb-2">
+                <div class="flex justify-between gap-2"><strong>${moeda(p.valor)}</strong><span class="text-xs text-slate-500">${String(p.data_pagamento || '').split('-').reverse().join('/')}</span></div>
+                <div class="text-xs text-slate-500">${p.metodo || 'Forma não informada'}${p.observacao ? ` · ${p.observacao}` : ''}</div>
+                <button type="button" onclick="prepararEdicaoRecebimento('${encodeURIComponent(JSON.stringify(p))}')" class="mt-1 text-xs font-semibold text-blue-600 hover:underline">Editar recebimento</button>
+            </div>`).join('') : '<p class="text-slate-500 text-sm">Nenhum recebimento registrado.</p>';
+        const valor = document.getElementById('finValor');
+        if (valor) {
+            // Em um novo recebimento, o limite é somente o saldo pendente.
+            // Na edição, prepararEdicaoRecebimento soma o valor do próprio lançamento
+            // ao saldo, permitindo corrigir/reduzir um recebimento mesmo com o orçamento quitado.
+            valor.max = saldoAtualFinanceiro.toFixed(2);
+            valor.placeholder = saldoAtualFinanceiro > 0 ? `Até ${moeda(saldoAtualFinanceiro)}` : 'Informe o valor';
+        }
+    } catch (erro) {
+        if (historico) historico.textContent = erro.message;
+        console.error(erro);
+    }
+}
+
+function prepararEdicaoRecebimento(pagamentoJson) {
+    const pagamento = JSON.parse(decodeURIComponent(pagamentoJson));
+    pagamentoEmEdicaoId = Number(pagamento.id);
+    const campoValor = document.getElementById('finValor');
+    const valorAtual = Number(pagamento.valor || 0);
+    if (campoValor) {
+        campoValor.value = valorAtual.toFixed(2);
+        // O valor já lançado precisa ser considerado disponível durante a edição.
+        // Ex.: orçamento quitado em R$ 3.000,00 -> permite editar esse lançamento
+        // até R$ 3.000,00, em vez de impor max=0 por causa do saldo zerado.
+        campoValor.max = (saldoAtualFinanceiro + valorAtual).toFixed(2);
+        campoValor.placeholder = `Até ${formatarMoeda(saldoAtualFinanceiro + valorAtual)}`;
+    }
+    document.getElementById('finData').value = pagamento.data_pagamento || '';
+    document.getElementById('finMetodo').value = pagamento.metodo || '';
+    document.getElementById('finObs').value = pagamento.observacao || '';
+    const titulo = document.querySelector('#formNovoRecebimento h3');
+    const botao = document.querySelector('#formNovoRecebimento button[type="submit"]');
+    if (titulo) titulo.textContent = 'Editar recebimento';
+    if (botao) botao.textContent = 'Salvar alterações';
+    document.getElementById('finValor')?.scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelarEdicaoRecebimento() {
+    pagamentoEmEdicaoId = null;
+    document.getElementById('formNovoRecebimento')?.reset();
+    const titulo = document.querySelector('#formNovoRecebimento h3');
+    const botao = document.querySelector('#formNovoRecebimento button[type="submit"]');
+    if (titulo) titulo.textContent = 'Registrar recebimento';
+    if (botao) botao.textContent = 'Registrar recebimento';
+    const data = document.getElementById('finData');
+    if (data) data.value = new Date().toISOString().slice(0,10);
+    const campoValor = document.getElementById('finValor');
+    if (campoValor) {
+        campoValor.max = Math.max(0, saldoAtualFinanceiro).toFixed(2);
+        campoValor.placeholder = saldoAtualFinanceiro > 0 ? `Até ${formatarMoeda(saldoAtualFinanceiro)}` : 'Informe o valor';
+    }
+}
+
+async function registrarRecebimento(evento) {
+    evento.preventDefault();
+    if (!financeiroOrcamentoAtual) return;
+    const botao = document.querySelector('#formNovoRecebimento button[type="submit"]') || document.querySelector('#formNovoRecebimento button');
+    if (botao) { botao.disabled = true; botao.textContent = 'Registrando...'; }
+    try {
+        const payload = {
+            valor: document.getElementById('finValor').value,
+            data_pagamento: document.getElementById('finData').value,
+            metodo: document.getElementById('finMetodo').value,
+            observacao: document.getElementById('finObs').value
+        };
+        const url = `/api/financeiro/${encodeURIComponent(financeiroOrcamentoAtual)}/pagamentos${pagamentoEmEdicaoId ? `/${pagamentoEmEdicaoId}` : ''}`;
+        const resposta = await fetch(url, {
+            method: pagamentoEmEdicaoId ? 'PUT' : 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+        });
+        const dados = await resposta.json();
+        if (!resposta.ok || dados.status !== 'success') throw new Error(dados.message || 'Não foi possível registrar.');
+        cancelarEdicaoRecebimento();
+        await carregarFinanceiroOrcamento();
+        if (typeof carregarResumoDashboard === 'function') carregarResumoDashboard();
+        if (typeof atualizarTabelaGeralOrcamentos === 'function') atualizarTabelaGeralOrcamentos();
+    } catch (erro) {
+        alert(erro.message);
+    } finally {
+        if (botao) botao.disabled = false;
+    }
 }

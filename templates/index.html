@@ -63,6 +63,31 @@
             0% { left: -100%; }
             100% { left: 200%; }
         }
+
+        /* Ajustes responsivos DeZiderio: navegação, tabelas, formulários e modais */
+        @media (max-width: 768px) {
+            html, body { max-width: 100%; overflow-x: hidden; }
+            body { font-size: 14px; }
+            main, #app, .container { max-width: 100%; }
+            table { min-width: 640px; }
+            .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+            input, select, textarea { max-width: 100%; font-size: 16px !important; }
+            button { min-height: 38px; }
+            #modalFinanceiroOrcamento { padding: 0.5rem !important; }
+            #modalFinanceiroOrcamento > div { margin: 0.25rem auto !important; max-height: calc(100dvh - 0.5rem); overflow-y: auto; }
+            #modalFinanceiroOrcamento .p-5 { padding: 1rem !important; }
+            #modalFinanceiroOrcamento .grid-cols-2 { gap: 0.75rem !important; }
+            #visao-wizard-orcamento > div:first-child { align-items: flex-start; flex-wrap: wrap; gap: .75rem; }
+            #visao-wizard-orcamento > div:first-child > div:last-child { width: 100%; justify-content: space-between; flex-wrap: wrap; }
+            #orcStatusSelect { max-width: 145px; font-size: 12px !important; }
+            #listaAtividadesGlobal > div { overflow-wrap: anywhere; }
+            .grid.md\:grid-cols-2 { grid-template-columns: minmax(0,1fr); }
+        }
+        @media (max-width: 480px) {
+            h1 { font-size: 1.25rem; }
+            #modalFinanceiroOrcamento .text-3xl { font-size: 1.75rem; }
+            #modalFinanceiroOrcamento .grid-cols-2 { grid-template-columns: 1fr 1fr; }
+        }
     </style>
 </head>
 <body class="bg-[#F4F6F9] dark:bg-navy-950 text-[#334155] dark:text-slate-200 h-full flex overflow-hidden font-sans antialiased selection:bg-gold-500/20 selection:text-gold-600">
@@ -178,6 +203,22 @@
                     </div>
                 </div>
 
+                <!-- RESUMO FINANCEIRO: permanece na tela inicial do dashboard -->
+                <section class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div><h3 class="text-sm font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-wallet text-emerald-500 mr-2"></i>Resumo financeiro</h3>
+                        <p class="text-xs text-slate-500 mt-1">Recebimentos confirmados e saldo dos contratos aprovados ou em execução.</p></div>
+                        <span class="text-[10px] text-slate-400">Atualizado junto ao dashboard</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        <div class="rounded-xl bg-emerald-500/5 border border-emerald-500/20 p-4"><p class="text-[10px] uppercase tracking-wider font-bold text-emerald-600">Total recebido</p><strong id="dash-fin-recebido" class="block text-xl font-extrabold text-emerald-600 mt-1">R$ 0,00</strong><span class="text-[10px] text-slate-500">Pagamentos registrados</span></div>
+                        <div class="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4"><p class="text-[10px] uppercase tracking-wider font-bold text-amber-600">A receber</p><strong id="dash-fin-pendente" class="block text-xl font-extrabold text-amber-600 mt-1">R$ 0,00</strong><span class="text-[10px] text-slate-500">Saldo em aberto</span></div>
+                        <div class="rounded-xl bg-indigo-500/5 border border-indigo-500/20 p-4"><p class="text-[10px] uppercase tracking-wider font-bold text-indigo-500">Parcialmente pagos</p><strong id="dash-fin-parciais" class="block text-xl font-extrabold text-indigo-500 mt-1">0</strong><span class="text-[10px] text-slate-500">Orçamentos</span></div>
+                        <div class="rounded-xl bg-slate-500/5 border border-slate-200 dark:border-slate-700 p-4"><p class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Quitados</p><strong id="dash-fin-quitados" class="block text-xl font-extrabold text-slate-800 dark:text-white mt-1">0</strong><span class="text-[10px] text-slate-500">Orçamentos</span></div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 dark:border-slate-800"><h4 class="text-xs font-bold text-slate-700 dark:text-slate-300 mb-3">Recebimentos por mês</h4><div id="dash-fin-grafico" class="grid grid-cols-6 sm:grid-cols-12 gap-2 items-end min-h-[120px]"><p class="text-xs text-slate-400 col-span-full">Carregando recebimentos...</p></div></div>
+                </section>
+
                 <!-- GRÁFICO E FUNIL -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <!-- Gráfico empilhado por status com detalhe ao passar o mouse -->
@@ -273,6 +314,9 @@
                         <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
                             <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lista de Propostas</span>
                             <input type="text" id="inputBuscaGeralOrc" oninput="filtrarTabelaGeralOrcamentos(this.value)" placeholder="Buscar orçamento..." class="bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:border-gold-500 shadow-sm">
+                            <select id="filtroStatusOrcamentos" onchange="filtrarTabelaGeralOrcamentos(document.getElementById('inputBuscaGeralOrc')?.value || '')" class="bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-800 dark:text-slate-200 outline-none shadow-sm">
+                                <option value="">Todos os status</option><option value="Enviado">Enviado / Pendente</option><option value="Em andamento">Em andamento</option><option value="Aprovado">Aprovado</option><option value="Recusado">Recusado</option>
+                            </select>
                         </div>
                         
                         <div class="overflow-x-auto">
@@ -937,6 +981,7 @@
 </div>
 
     <!-- JS Estático -->
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <div id="modalFinanceiroOrcamento" class="hidden fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm p-3 md:p-6 overflow-y-auto"><div class="max-w-3xl mx-auto my-4 bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl overflow-hidden"><div class="flex justify-between items-center p-5 border-b border-slate-200 dark:border-slate-700"><div><p class="text-[10px] uppercase tracking-widest text-slate-500 font-bold">DeZiderio · Financeiro</p><h2 id="finTitulo" class="text-lg font-extrabold">Controle financeiro</h2><p id="finCliente" class="text-xs text-slate-500 mt-1"></p></div><button onclick="fecharFinanceiroOrcamento()" class="text-xl px-2">&times;</button></div><div class="p-5 space-y-5"><div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3"><div class="flex justify-between"><div><div class="text-xs text-slate-500">Percentual recebido</div><div id="finPercentual" class="text-3xl font-extrabold text-emerald-500">0%</div></div><span id="finSituacao" class="text-xs font-bold px-3 py-1 rounded-full">Pendente</span></div><div class="h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden"><div id="finBarra" class="h-full bg-emerald-500" style="width:0%"></div></div><div class="grid grid-cols-2 gap-4 text-sm"><div><p class="text-xs text-slate-500">Valor do orçamento</p><strong id="finTotal"></strong></div><div><p class="text-xs text-slate-500">Já recebido</p><strong id="finRecebido"></strong></div><div><p class="text-xs text-slate-500">Pendente</p><strong id="finSaldo"></strong></div><div><p class="text-xs text-slate-500">Entrada prevista</p><strong id="finEntradaPrevista"></strong></div></div></div><div class="grid md:grid-cols-2 gap-5"><form id="formNovoRecebimento" onsubmit="registrarRecebimento(event)" class="rounded-xl border border-slate-200 dark:border-slate-700 p-4 space-y-3"><h3 class="font-bold">Registrar recebimento</h3><label class="block text-xs">Valor recebido</label><input id="finValor" type="number" min="0.01" step="0.01" required class="w-full rounded-lg border bg-transparent p-2 text-sm"><label class="block text-xs">Data</label><input id="finData" type="date" required class="w-full rounded-lg border bg-transparent p-2 text-sm"><label class="block text-xs">Forma de pagamento</label><select id="finMetodo" class="w-full rounded-lg border bg-transparent p-2 text-sm"><option value="">Não informado</option><option>Pix</option><option>Dinheiro</option><option>Transferência</option><option>Cartão</option><option>Outro</option></select><label class="block text-xs">Observação</label><input id="finObs" maxlength="250" class="w-full rounded-lg border bg-transparent p-2 text-sm" placeholder="Ex.: entrada, parcela 2"><button type="submit" class="w-full rounded-lg bg-emerald-600 text-white font-bold py-2.5 text-sm">Registrar recebimento</button><button type="button" onclick="cancelarEdicaoRecebimento()" class="w-full rounded-lg border border-slate-300 dark:border-slate-600 py-2 text-xs">Limpar / cancelar edição</button></form><div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4"><h3 class="font-bold mb-3">Histórico de recebimentos</h3><div id="finHistorico" class="space-y-2 text-sm">Carregando...</div></div></div><div class="flex justify-end"><button onclick="fecharFinanceiroOrcamento()" class="px-4 py-2 rounded-lg border text-sm">Fechar</button></div></div></div></div>
+<script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
