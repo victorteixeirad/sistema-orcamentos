@@ -134,7 +134,7 @@
     </aside>
 
     <!-- CONTEÚDO PRINCIPAL -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden bg-[#F4F6F9] dark:bg-navy-950">
+    <main class="flex-1 flex flex-col h-full overflow-y-auto bg-[#F4F6F9] dark:bg-navy-950 pb-20 md:pb-8">
         
         <header class="h-16 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between px-8 bg-white/90 dark:bg-navy-900/90 backdrop-blur sticky top-0 z-20 no-print shadow-sm">
             <div class="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
@@ -933,6 +933,25 @@
             </div>
         </div>
     </div>
+
+    <!-- BARRA DE NAVEGAÇÃO INFERIOR PARA MOBILE (Visível apenas em celulares) -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-navy-950 border-t border-slate-800/90 z-40 flex justify-around items-center h-16 px-1 text-[10px] font-medium text-slate-400 no-print shadow-2xl backdrop-blur-md">
+        <button onclick="mudarAba('dashboard')" id="mob-nav-dashboard" class="flex flex-col items-center justify-center flex-1 py-1 text-gold-500 transition">
+            <i class="fa-solid fa-table-columns text-base mb-0.5"></i> Geral
+        </button>
+        <button onclick="mudarAba('orcamentos')" id="mob-nav-orcamentos" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition">
+            <i class="fa-solid fa-file-lines text-base mb-0.5"></i> Orçamentos
+        </button>
+        <button onclick="mudarAba('servicos')" id="mob-nav-servicos" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition">
+            <i class="fa-solid fa-book text-base mb-0.5"></i> Serviços
+        </button>
+        <button onclick="mudarAba('atividades')" id="mob-nav-atividades" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition">
+            <i class="fa-solid fa-clock-rotate-left text-base mb-0.5"></i> Atividades
+        </button>
+        <button onclick="mudarAba('configuracoes')" id="mob-nav-configuracoes" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition">
+            <i class="fa-solid fa-gear text-base mb-0.5"></i> Ajustes
+        </button>
+    </nav>
 
     <!-- MODAL OBSERVAÇÕES -->
     <div id="obsModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
