@@ -13,8 +13,7 @@ def get_db_connection():
         import psycopg2.extras
         # Ajusta a URL para o formato exigido pelo SQLAlchemy/psycopg2 se necessário
         url = DATABASE_URL.replace("postgres://", "postgresql://", 1) if DATABASE_URL.startswith("postgres://") else DATABASE_URL
-        conn = psycopg2.connect(url)
-        conn.cursor_factory = psycopg2.extras.RealDictCursor
+        conn = psycopg2.connect(url, cursor_factory=psycopg2.extras.RealDictCursor)
         return conn
     else:
         import sqlite3
@@ -29,20 +28,20 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS servicos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        area TEXT NOT NULL,
-        description TEXT NOT NULL,
-        unit TEXT DEFAULT 'm²',
-        price REAL DEFAULT 0
-    )
-""")
     cursor = conn.cursor()
-    
+
     if DATABASE_URL:
-        # Sintaxe PostgreSQL
-        cursor.execute('''
+        # PostgreSQL (Render)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS servicos (
+                id SERIAL PRIMARY KEY,
+                area TEXT NOT NULL,
+                description TEXT NOT NULL,
+                unit TEXT DEFAULT 'm²',
+                price DOUBLE PRECISION DEFAULT 0
+            )
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS orcamentos (
                 id SERIAL PRIMARY KEY,
                 orc_number TEXT UNIQUE,
@@ -67,10 +66,10 @@ def init_db():
                 status_updated_at TEXT,
                 created_at TEXT
             )
-        ''')
-        cursor.execute('''
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS configuracoes (
-                id SERIAL PRIMARY KEY,
+                id INTEGER PRIMARY KEY,
                 razao_social TEXT,
                 cnpj TEXT,
                 endereco TEXT,
@@ -80,26 +79,34 @@ def init_db():
                 logo_url TEXT,
                 qrcode_pix_url TEXT
             )
-        ''')
-        cursor.execute("SELECT COUNT(*) FROM configuracoes")
-        count = cursor.fetchone()
-        if count and (count[0] if isinstance(count, tuple) else count['count']) == 0:
-            cursor.execute('''
-                INSERT INTO configuracoes (razao_social, cnpj, endereco, telefone, pix_chave, observacoes_padrao, logo_url, qrcode_pix_url)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            ''', (
+        """)
+        cursor.execute("SELECT COUNT(*) AS total FROM configuracoes")
+        if cursor.fetchone()['total'] == 0:
+            cursor.execute("""
+                INSERT INTO configuracoes
+                (id, razao_social, cnpj, endereco, telefone, pix_chave, observacoes_padrao, logo_url, qrcode_pix_url)
+                VALUES (1, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
                 "DEZIDERIO - ESPECIALISTA EM PINTURA E ACABAMENTO",
                 "30.654.467/0001-16",
                 "Rua Renato Pereira de Campos, nº 2489",
                 "(17) 99283-5555",
                 "30.654.467/0001-16 (CNPJ - Deziderio)",
                 "O serviço será executado de forma profissional. Respeitando as normas técnicas dos produtos a serem usados nesse projeto. Fazemos todo o isolamento devido para não causar danos ao imóvel. Buscamos sempre melhoria contínua entregando um projeto com qualidade.",
-                "",
-                ""
+                "", ""
             ))
     else:
-        # Sintaxe SQLite original
-        cursor.execute('''
+        # SQLite (desenvolvimento local)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS servicos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                area TEXT NOT NULL,
+                description TEXT NOT NULL,
+                unit TEXT DEFAULT 'm²',
+                price REAL DEFAULT 0
+            )
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS orcamentos (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 orc_number TEXT UNIQUE,
@@ -124,8 +131,8 @@ def init_db():
                 status_updated_at TEXT,
                 created_at TEXT
             )
-        ''')
-        cursor.execute('''
+        """)
+        cursor.execute("""
             CREATE TABLE IF NOT EXISTS configuracoes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 razao_social TEXT,
@@ -137,23 +144,23 @@ def init_db():
                 logo_url TEXT,
                 qrcode_pix_url TEXT
             )
-        ''')
-        cursor.execute("SELECT COUNT(*) FROM configuracoes")
-        if cursor.fetchone()[0] == 0:
-            cursor.execute('''
-                INSERT INTO configuracoes (razao_social, cnpj, endereco, telefone, pix_chave, observacoes_padrao, logo_url, qrcode_pix_url)
+        """)
+        cursor.execute("SELECT COUNT(*) AS total FROM configuracoes")
+        if cursor.fetchone()['total'] == 0:
+            cursor.execute("""
+                INSERT INTO configuracoes
+                (razao_social, cnpj, endereco, telefone, pix_chave, observacoes_padrao, logo_url, qrcode_pix_url)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (
+            """, (
                 "DEZIDERIO - ESPECIALISTA EM PINTURA E ACABAMENTO",
                 "30.654.467/0001-16",
                 "Rua Renato Pereira de Campos, nº 2489",
                 "(17) 99283-5555",
                 "30.654.467/0001-16 (CNPJ - Deziderio)",
                 "O serviço será executado de forma profissional. Respeitando as normas técnicas dos produtos a serem usados nesse projeto. Fazemos todo o isolamento devido para não causar danos ao imóvel. Buscamos sempre melhoria contínua entregando um projeto com qualidade.",
-                "",
-                ""
+                "", ""
             ))
-            
+
     conn.commit()
     conn.close()
 
@@ -247,21 +254,19 @@ def salvar_orcamento():
         existente = cursor.fetchone()
         
         if existente:
-            est_status = existente[1] if DATABASE_URL else existente['status']
-            est_updated = existente[2] if DATABASE_URL else existente['status_updated_at']
+            est_status = existente['status']
+            est_updated = existente['status_updated_at']
             if est_status == 'Aprovado':
                 return jsonify({"status": "error", "message": "Este orçamento já foi aprovado e está bloqueado para edição."}), 409
 
         if DATABASE_URL:
-            cursor.execute("SELECT TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI')")
+            cursor.execute("SELECT TO_CHAR(NOW(), 'DD/MM/YYYY HH24:MI') AS agora")
         else:
-            cursor.execute("SELECT datetime('now', 'localtime')")
-        agora = cursor.fetchone()[0]
-        if isinstance(agora, tuple):
-            agora = agora[0]
+            cursor.execute("SELECT datetime('now', 'localtime') AS agora")
+        agora = cursor.fetchone()['agora']
 
         if existente:
-            est_status = existente[1] if DATABASE_URL else existente['status']
+            est_status = existente['status']
             status_updated_at = agora if est_status != novo_status else (est_updated or agora)
             
             if DATABASE_URL:
@@ -347,25 +352,15 @@ def obter_orcamento(orc_number):
 
 @app.route('/api/servicos/listar', methods=['GET'])
 def listar_servicos():
-    conn = sqlite3.connect(DB_NAME)
-    conn.row_factory = sqlite3.Row
-
+    conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM servicos ORDER BY area ASC, id ASC")
+        cursor.execute("SELECT id, area, description, unit, price FROM servicos ORDER BY area ASC, id ASC")
         servicos = [dict(row) for row in cursor.fetchall()]
-
-        return jsonify({
-            "status": "success",
-            "servicos": servicos
-        })
-
-    except sqlite3.Error as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
+        return jsonify({"status": "success", "servicos": servicos})
+    except Exception as e:
+        app.logger.exception("Erro ao listar serviços")
+        return jsonify({"status": "error", "message": "Não foi possível listar os serviços."}), 500
     finally:
         conn.close()
 
@@ -373,99 +368,66 @@ def listar_servicos():
 @app.route('/api/servicos/salvar', methods=['POST'])
 def salvar_servico():
     dados = request.get_json(silent=True) or {}
-
-    area = (dados.get('area') or '').strip()
-    description = (dados.get('description') or '').strip()
-    unit = dados.get('unit') or 'm²'
+    area = str(dados.get('area') or '').strip().upper()
+    description = str(dados.get('description') or '').strip()
+    unit = str(dados.get('unit') or 'm²').strip()
 
     try:
         price = float(dados.get('price') or 0)
+        if price < 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return jsonify({"status": "error", "message": "Preço inválido."}), 400
+
+    if not area or not description:
+        return jsonify({"status": "error", "message": "Área e descrição são obrigatórias."}), 400
+
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        p = '%s' if DATABASE_URL else '?'
         servico_id = dados.get('id')
 
-        if not area or not description:
-            return jsonify({
-                "status": "error",
-                "message": "Área e descrição são obrigatórias."
-            }), 400
-
-        conn = sqlite3.connect(DB_NAME)
-        cursor = conn.cursor()
-
         if servico_id:
-            cursor.execute("""
-                UPDATE servicos
-                SET area = ?, description = ?, unit = ?, price = ?
-                WHERE id = ?
-            """, (area, description, unit, price, servico_id))
-
+            cursor.execute(
+                f"UPDATE servicos SET area={p}, description={p}, unit={p}, price={p} WHERE id={p}",
+                (area, description, unit, price, servico_id)
+            )
             if cursor.rowcount == 0:
-                conn.close()
-                return jsonify({
-                    "status": "error",
-                    "message": "Serviço não encontrado."
-                }), 404
-
+                conn.rollback()
+                return jsonify({"status": "error", "message": "Serviço não encontrado."}), 404
         else:
-            cursor.execute("""
-                INSERT INTO servicos (area, description, unit, price)
-                VALUES (?, ?, ?, ?)
-            """, (area, description, unit, price))
+            cursor.execute(
+                f"INSERT INTO servicos (area, description, unit, price) VALUES ({p}, {p}, {p}, {p})",
+                (area, description, unit, price)
+            )
 
         conn.commit()
-
-        return jsonify({
-            "status": "success",
-            "message": "Serviço salvo com sucesso!"
-        })
-
-    except (ValueError, TypeError):
-        return jsonify({
-            "status": "error",
-            "message": "Preço inválido."
-        }), 400
-
-    except sqlite3.Error as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
+        return jsonify({"status": "success", "message": "Serviço salvo com sucesso!"})
+    except Exception:
+        conn.rollback()
+        app.logger.exception("Erro ao salvar serviço")
+        return jsonify({"status": "error", "message": "Não foi possível salvar o serviço."}), 500
     finally:
-        if 'conn' in locals():
-            conn.close()
+        conn.close()
 
 
 @app.route('/api/servicos/deletar/<int:servico_id>', methods=['DELETE'])
 def deletar_servico(servico_id):
-    conn = sqlite3.connect(DB_NAME)
-
+    conn = get_db_connection()
     try:
         cursor = conn.cursor()
-
-        cursor.execute(
-            "DELETE FROM servicos WHERE id = ?",
-            (servico_id,)
-        )
-
+        p = '%s' if DATABASE_URL else '?'
+        cursor.execute(f"DELETE FROM servicos WHERE id = {p}", (servico_id,))
         if cursor.rowcount == 0:
-            return jsonify({
-                "status": "error",
-                "message": "Serviço não encontrado."
-            }), 404
-
+            conn.rollback()
+            return jsonify({"status": "error", "message": "Serviço não encontrado."}), 404
         conn.commit()
-
-        return jsonify({
-            "status": "success",
-            "message": "Serviço excluído com sucesso!"
-        })
-
-    except sqlite3.Error as e:
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
-
+        return jsonify({"status": "success", "message": "Serviço excluído com sucesso!"})
+    except Exception:
+        conn.rollback()
+        app.logger.exception("Erro ao excluir serviço")
+        return jsonify({"status": "error", "message": "Não foi possível excluir o serviço."}), 500
     finally:
         conn.close()
 

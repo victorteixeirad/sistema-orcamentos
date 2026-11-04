@@ -226,19 +226,25 @@ function mudarAba(abaId) {
 
 function carregarServicosMasterAPI() {
     fetch('/api/servicos/listar')
-    .then(res => res.json())
-    .then(data => {
-        if (data && data.status === 'success' && data.servicos) {
-            if (data.servicos.length > 0) {
-                bibliotecaServicos = data.servicos;
+        .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || `Erro HTTP ${res.status}`);
+            return data;
+        })
+        .then(data => {
+            if (data.status !== 'success' || !Array.isArray(data.servicos)) {
+                throw new Error(data.message || 'Resposta inválida do servidor.');
             }
-        }
-        renderizarTabelaServicosMaster();
-    })
-    .catch(err => {
-        console.error("Erro ao carregar serviços:", err);
-        renderizarTabelaServicosMaster();
-    });
+            bibliotecaServicos = data.servicos;
+            renderizarTabelaServicosMaster();
+        })
+        .catch(err => {
+            console.error("Erro ao carregar serviços:", err);
+            const tbody = document.getElementById('tabelaServicosMasterBody');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-rose-500">Não foi possível carregar os serviços. Tente novamente.</td></tr>`;
+            }
+        });
 }
 
 function renderizarTabelaServicosMaster(filtro = '') {
@@ -292,7 +298,7 @@ function salvarServicoMaster() {
     const unitEl = document.getElementById('libMasterUnit');
     const priceEl = document.getElementById('libMasterPrice');
 
-    const id = idEl && idEl.value ? parseInt(idEl.value) : null;
+    const id = idEl && idEl.value ? parseInt(idEl.value, 10) : null;
     const area = areaEl ? areaEl.value.trim().toUpperCase() : '';
     const description = descEl ? descEl.value.trim() : '';
     const unit = unitEl ? unitEl.value : 'm²';
@@ -303,27 +309,26 @@ function salvarServicoMaster() {
         return;
     }
 
-    const payload = { id, area, description, unit, price };
-
     fetch('/api/servicos/salvar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({ id, area, description, unit, price })
     })
-    .then(res => res.json())
+    .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `Erro HTTP ${res.status}`);
+        return data;
+    })
     .then(data => {
-        if (data.status === 'success') {
-            alert("✅ Serviço salvo com sucesso!");
-            limparFormServicoMaster();
-            carregarServicosMasterAPI();
-        } else {
-            alert("❌ Erro ao salvar serviço: " + (data.message || ''));
-        }
+        if (data.status !== 'success') throw new Error(data.message || 'Não foi possível salvar o serviço.');
+        alert("Serviço salvo com sucesso!");
+        limparFormServicoMaster();
+        carregarServicosMasterAPI();
     })
     .catch(err => {
-    console.error("Erro ao salvar serviço:", err);
-    alert("❌ Não foi possível salvar o serviço no servidor. Verifique a conexão e tente novamente.");
-});
+        console.error("Erro na API de serviços:", err);
+        alert("Não foi possível salvar o serviço: " + err.message);
+    });
 }
 
 function prepararEdicaoServicoMaster(id) {
@@ -351,22 +356,22 @@ function limparFormServicoMaster() {
 }
 
 function deletarServicoMaster(id) {
-    if (confirm("⚠️ Deseja realmente excluir este serviço da base?")) {
-        fetch(`/api/servicos/deletar/${id}`, { method: 'DELETE' })
-        .then(res => res.json())
+    if (!confirm("Deseja realmente excluir este serviço da base?")) return;
+
+    fetch(`/api/servicos/deletar/${id}`, { method: 'DELETE' })
+        .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || `Erro HTTP ${res.status}`);
+            return data;
+        })
         .then(data => {
-            if (data.status === 'success') {
-                carregarServicosMasterAPI();
-            } else {
-                bibliotecaServicos = bibliotecaServicos.filter(s => s.id !== id);
-                renderizarTabelaServicosMaster();
-            }
+            if (data.status !== 'success') throw new Error(data.message || 'Não foi possível excluir o serviço.');
+            carregarServicosMasterAPI();
         })
         .catch(err => {
-            bibliotecaServicos = bibliotecaServicos.filter(s => s.id !== id);
-            renderizarTabelaServicosMaster();
+            console.error("Erro ao excluir serviço:", err);
+            alert("Não foi possível excluir o serviço: " + err.message);
         });
-    }
 }
 
 function renderizarListaComentariosHistorico() {
