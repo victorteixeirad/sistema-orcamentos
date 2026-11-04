@@ -127,7 +127,7 @@
 
         <div class="p-4 border-t border-slate-800/80">
             <div class="p-3 rounded-xl bg-navy-900/50 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-                <span>v2.5 Pro</span>
+                <span>Build 2.0.2</span>
                 <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
             </div>
         </div>
@@ -934,22 +934,27 @@
         </div>
     </div>
 
-    <!-- BARRA DE NAVEGAÇÃO INFERIOR PARA MOBILE (Visível apenas em celulares) -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-navy-950 border-t border-slate-800/90 z-40 flex justify-around items-center h-16 px-1 text-[10px] font-medium text-slate-400 no-print shadow-2xl backdrop-blur-md">
-        <button onclick="mudarAba('dashboard')" id="mob-nav-dashboard" class="flex flex-col items-center justify-center flex-1 py-1 text-gold-500 transition">
-            <i class="fa-solid fa-table-columns text-base mb-0.5"></i> Geral
+    <!-- BARRA DE NAVEGAÇÃO INFERIOR PARA MOBILE -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-navy-950/95 border-t border-slate-800/80 z-50 flex justify-around items-center h-16 px-1 text-[10px] font-medium text-slate-400 no-print shadow-2xl backdrop-blur-md">
+        <button onclick="mudarAba('dashboard')" id="mob-nav-dashboard" class="flex flex-col items-center justify-center flex-1 py-1 text-gold-500 transition active:scale-95">
+            <i class="fa-solid fa-table-columns text-base mb-0.5"></i>
+            <span>Geral</span>
         </button>
-        <button onclick="mudarAba('orcamentos')" id="mob-nav-orcamentos" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition">
-            <i class="fa-solid fa-file-lines text-base mb-0.5"></i> Orçamentos
+        <button onclick="mudarAba('orcamentos')" id="mob-nav-orcamentos" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition active:scale-95">
+            <i class="fa-solid fa-file-lines text-base mb-0.5"></i>
+            <span>Orçamentos</span>
         </button>
-        <button onclick="mudarAba('servicos')" id="mob-nav-servicos" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition">
-            <i class="fa-solid fa-book text-base mb-0.5"></i> Serviços
+        <button onclick="mudarAba('servicos')" id="mob-nav-servicos" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition active:scale-95">
+            <i class="fa-solid fa-book text-base mb-0.5"></i>
+            <span>Serviços</span>
         </button>
-        <button onclick="mudarAba('atividades')" id="mob-nav-atividades" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition">
-            <i class="fa-solid fa-clock-rotate-left text-base mb-0.5"></i> Atividades
+        <button onclick="mudarAba('atividades')" id="mob-nav-atividades" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition active:scale-95">
+            <i class="fa-solid fa-clock-rotate-left text-base mb-0.5"></i>
+            <span>Atividades</span>
         </button>
-        <button onclick="mudarAba('configuracoes')" id="mob-nav-configuracoes" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition">
-            <i class="fa-solid fa-gear text-base mb-0.5"></i> Ajustes
+        <button onclick="mudarAba('configuracoes')" id="mob-nav-configuracoes" class="flex flex-col items-center justify-center flex-1 py-1 hover:text-white transition active:scale-95">
+            <i class="fa-solid fa-gear text-base mb-0.5"></i>
+            <span>Ajustes</span>
         </button>
     </nav>
 
