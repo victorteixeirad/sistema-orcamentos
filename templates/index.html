@@ -889,8 +889,8 @@
     </div>
 
     <!-- MODAL BIBLIOTECA -->
-    <div id="bibliotecaModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-2 sm:p-4">
-        <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] sm:max-h-[90vh] flex flex-col overflow-hidden relative z-10 text-slate-800 dark:text-slate-100 mb-14 md:mb-0">
+    <div id="bibliotecaModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden relative z-10 text-slate-800 dark:text-slate-100">
             <div class="bg-slate-100 dark:bg-navy-950 p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
                 <h3 class="font-bold text-sm flex items-center gap-2 text-slate-900 dark:text-white">
                     <i class="fa-solid fa-book-bookmark text-gold-500"></i> Biblioteca de Serviços Pré-Cadastrados
@@ -925,12 +925,9 @@
                 </div>
                 <div id="listaServicosBibliotecaContainer" class="space-y-2"></div>
             </div>
-            <!-- RODAPÉ DO MODAL AJUSTADO PARA MOBILE -->
-            <div class="bg-slate-100 dark:bg-navy-950 p-3 sm:p-4 border-t border-slate-200 dark:border-slate-800 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-2.5 shrink-0">
-                <button onclick="fecharModalBiblioteca()" type="button" class="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 rounded-xl text-center active:scale-95 transition">
-                    Cancelar
-                </button>
-                <button onclick="inserirServicosSelecionadosNoOrcamento()" type="button" class="w-full sm:w-auto bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs transition flex items-center justify-center gap-2 shadow-md active:scale-95">
+            <div class="bg-slate-100 dark:bg-navy-950 p-3.5 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <button onclick="fecharModalBiblioteca()" class="px-4 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 rounded-xl">Cancelar</button>
+                <button onclick="inserirServicosSelecionadosNoOrcamento()" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-md">
                     <i class="fa-solid fa-circle-plus"></i> Inserir Selecionados no Orçamento
                 </button>
             </div>

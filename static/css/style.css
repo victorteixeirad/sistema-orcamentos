@@ -348,23 +348,3 @@ input:focus, select:focus, textarea:focus {
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     }
 }
-
-/* Proteção contra sobreposição da Bottom Nav em Modais e Wizards */
-@media (max-width: 768px) {
-    /* Garante que os modais fiquem acima de tudo e tenham margem para a barra inferior */
-    #bibliotecaModal, #historicoModal, #obsModal, #modalFinanceiroOrcamento {
-        padding-bottom: 4.5rem !important; /* Espaço exato da altura da barra de navegação */
-    }
-
-    /* Ajuste da tabela de itens no editor da Etapa 2 para rolar suave no touch */
-    #tabelaItensEditorBody input, 
-    #tabelaItensEditorBody select {
-        min-width: 70px;
-        font-size: 14px !important;
-    }
-
-    /* Evita que o modal da biblioteca estoure verticalmente no celular */
-    #bibliotecaModal > div {
-        max-height: calc(100vh - 6rem) !important;
-    }
-}
