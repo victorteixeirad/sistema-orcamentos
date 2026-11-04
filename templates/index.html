@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deziderio · Gestão de Orçamentos</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: { 
+                            800: '#182535', 
+                            900: '#131d2b', 
+                            950: '#0b1118' 
+                        },
+                        gold: { 
+                            400: '#d4af37', 
+                            500: '#d4af37', 
+                            600: '#c5a059',
+                            700: '#b48a3c' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- CSS Estático -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        /* Transição suave nas trocas de abas */
+        .aba-animada {
+            animation: fadeInTab 0.35s ease-out forwards;
+        }
+        @keyframes fadeInTab {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        /* Animação com brilho e vida para as barras do funil */
+        .bar-dinamica {
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .bar-dinamica::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: shimmerBar 2.5s infinite;
+        }
+        @keyframes shimmerBar {
+            0% { left: -100%; }
+            100% { left: 200%; }
+        }
+    </style>
+</head>
+<body class="bg-[#F4F6F9] dark:bg-navy-950 text-[#334155] dark:text-slate-200 h-full flex overflow-hidden font-sans antialiased selection:bg-gold-500/20 selection:text-gold-600">
+
+    <!-- SIDEBAR CORPORATIVA -->
+    <aside class="w-64 bg-navy-950 border-r border-slate-800/80 flex flex-col justify-between hidden md:flex no-print select-none shrink-0 shadow-lg">
+        <div>
+            <div class="p-6 border-b border-slate-800/80 flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gold-500/10 border border-gold-500/30 text-gold-500 font-bold flex items-center justify-center shadow-sm">
+                    <i class="fa-solid fa-paint-roller text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-white tracking-wider text-sm" id="sidebarEmpresaNome">Deziderio</h1>
+                    <p class="text-[10px] text-slate-400 tracking-wide">Gestão de Orçamentos</p>
+                </div>
+            </div>
+
+            <!-- Navegação Lateral com Hover Escuro Elegante no Modo Light -->
+            <nav class="p-4 space-y-1.5 text-xs font-medium">
+                <button onclick="mudarAba('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white/10 text-white transition-all duration-200 shadow-sm hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-table-columns text-gold-500"></i> Visão Geral
+                </button>
+                <button onclick="mudarAba('orcamentos')" id="nav-orcamentos" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 transition-all duration-200 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-file-lines text-gold-500"></i> Orçamentos
+                </button>
+                <button onclick="mudarAba('servicos')" id="nav-servicos" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 transition-all duration-200 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-book text-gold-500"></i> Serviços
+                </button>
+                <button onclick="mudarAba('atividades')" id="nav-atividades" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 transition-all duration-200 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-clock-rotate-left text-gold-500"></i> Atividades
+                </button>
+                <button onclick="mudarAba('configuracoes')" id="nav-configuracoes" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 transition-all duration-200 hover:bg-slate-800 hover:text-white">
+                    <i class="fa-solid fa-gear text-gold-500"></i> Configurações
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-slate-800/80">
+            <div class="p-3 rounded-xl bg-navy-900/50 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
+                <span>v2.5 Pro</span>
+                <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-[#F4F6F9] dark:bg-navy-950">
+        
+        <header class="h-16 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between px-8 bg-white/90 dark:bg-navy-900/90 backdrop-blur sticky top-0 z-20 no-print shadow-sm">
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-400">
+                <span>Deziderio</span>
+                <i class="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
+                <span class="text-slate-900 dark:text-white font-semibold">Painel Comercial</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="toggleDarkMode()" class="bg-slate-100 dark:bg-navy-950 hover:bg-slate-800 hover:text-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 px-3.5 py-2 rounded-xl text-xs font-semibold transition border border-slate-200 dark:border-slate-800 flex items-center gap-2 shadow-sm active:scale-95" title="Alternar Tema">
+                    <i class="fa-solid fa-circle-half-stroke text-gold-700 dark:text-gold-500" id="iconeTema"></i> <span class="hidden sm:inline">Tema</span>
+                </button>
+                <button onclick="abrirModalHistorico()" class="bg-gold-600 dark:bg-gold-500 hover:bg-gold-700 dark:hover:bg-gold-600 text-slate-950 font-bold text-xs px-4 py-2 rounded-xl shadow-sm transition flex items-center gap-2 active:scale-95">
+                    <i class="fa-solid fa-database"></i> Banco de Dados
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-8 space-y-6">
+
+            <!-- ABA 1: DASHBOARD EXECUTIVO INTERATIVO -->
+            <section id="aba-dashboard" class="aba-animada space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-navy-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Painel Comercial & Financeiro</h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Indicadores mostram a carteira atual; o gráfico acompanha a evolução das propostas emitidas.</p>
+                    </div>
+                    <div class="flex items-center gap-3 w-full sm:w-auto">
+                        <select id="filtroPeriodoDashboard" onchange="carregarResumoDashboard()" class="bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 text-xs px-3 py-2 rounded-xl outline-none font-semibold text-slate-700 dark:text-slate-200 cursor-pointer shadow-sm">
+                            <option value="ultimos_6" selected>Últimos 6 meses</option>
+                            <option value="ano_atual">Ano atual</option>
+                            <option value="todos">Todo o histórico</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- CARDS DE KPIS EXECUTIVOS CLICÁVEIS -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div onclick="abrirGavetaDashboard('Aprovado', 'Contratos Fechados')" class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm hover:border-emerald-500/50 hover:shadow-md transition cursor-pointer group">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-emerald-600 transition">Valor aprovado</span>
+                        <div class="text-lg font-extrabold text-emerald-600 dark:text-emerald-400 font-mono" id="dash-faturamento-total">R$ 0,00</div>
+                        <p class="text-[10px] text-slate-400"><span id="dash-count-aprovados" class="font-bold">0</span> contratos fechados <i class="fa-solid fa-arrow-right text-[9px] ml-1 opacity-0 group-hover:opacity-100 transition"></i></p>
+                    </div>
+
+                    <div onclick="abrirGavetaDashboard('Enviado', 'Pipeline (Propostas Aguardando)')" class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm hover:border-gold-500/50 hover:shadow-md transition cursor-pointer group">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-gold-500 transition">Pipeline (Em Aberto)</span>
+                        <div class="text-lg font-bold text-slate-900 dark:text-white font-mono" id="dash-valor-pendente">R$ 0,00</div>
+                        <p class="text-[10px] text-slate-400"><span id="dash-count-pendente" class="font-bold">0</span> propostas aguardando <i class="fa-solid fa-arrow-right text-[9px] ml-1 opacity-0 group-hover:opacity-100 transition"></i></p>
+                    </div>
+
+                    <div onclick="abrirGavetaDashboard('Em andamento', 'Obras em Execução')" class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm hover:border-indigo-500/50 hover:shadow-md transition cursor-pointer group">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider group-hover:text-indigo-400 transition">Obras em Execução</span>
+                        <div class="text-lg font-bold text-indigo-500 font-mono" id="dash-valor-andamento">R$ 0,00</div>
+                        <p class="text-[10px] text-slate-400"><span id="dash-count-andamento" class="font-bold">0</span> obras ativas na rua <i class="fa-solid fa-arrow-right text-[9px] ml-1 opacity-0 group-hover:opacity-100 transition"></i></p>
+                    </div>
+
+                    <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Taxa de Conversão</span>
+                        <div class="text-lg font-extrabold text-gold-600 dark:text-gold-400 font-mono" id="dash-taxa-conversao">0%</div>
+                        <p class="text-[10px] text-slate-400">Eficiência comercial</p>
+                    </div>
+
+                    <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Ticket Médio</span>
+                        <div class="text-lg font-bold text-slate-900 dark:text-white font-mono" id="dash-ticket-medio">R$ 0,00</div>
+                        <p class="text-[10px] text-slate-400">Por contrato aprovado</p>
+                    </div>
+                </div>
+
+                <!-- GRÁFICO E FUNIL -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Gráfico empilhado por status com detalhe ao passar o mouse -->
+                    <div class="lg:col-span-2 bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-3 shadow-sm">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                            <!-- Título em Preto Padrão Solicitado -->
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-gold-500"></i> Composição da carteira por mês
+                            </h3>
+                            <div id="chartInfoBox" class="bg-slate-100 dark:bg-navy-950 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 text-[11px] font-mono text-slate-700 dark:text-slate-300">
+                                Passe o mouse sobre uma coluna para ver os valores
+                            </div>
+                        </div>
+                        
+                        <div class="h-60 w-full flex items-center justify-center px-2 pt-2" id="containerGraficoLinhas"></div>
+
+                        <div class="flex justify-center gap-6 text-[11px] text-slate-700 dark:text-slate-300 pt-2 border-t border-slate-200 dark:border-slate-800">
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block"></span> Aprovado</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-indigo-500 inline-block"></span> Em andamento</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-gold-500 inline-block"></span> Enviado</span>
+                            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500 inline-block"></span> Recusado</span>
+                        </div>
+                    </div>
+
+                    <!-- Distribuição clicável da carteira por status -->
+                    <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 space-y-4 shadow-sm flex flex-col justify-between">
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-gold-500"></i> Funil de Propostas
+                        </h3>
+                        <div class="space-y-4 text-xs">
+                            <div onclick="abrirGavetaDashboard('Aprovado', 'Propostas Aprovadas')" class="cursor-pointer group p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-navy-950 transition">
+                                <div class="flex justify-between text-slate-700 dark:text-slate-300 mb-1.5">
+                                    <span class="group-hover:text-emerald-500 font-bold transition">Aprovados</span>
+                                    <span id="bar-val-aprovado" class="font-bold font-mono text-emerald-500">0 (R$ 0,00)</span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-navy-950 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-slate-800 shadow-inner">
+                                    <div id="bar-prog-aprovado" class="bar-dinamica bg-emerald-500 h-full w-0 rounded-full shadow-sm"></div>
+                                </div>
+                            </div>
+
+                            <div onclick="abrirGavetaDashboard('Em andamento', 'Obras Em Andamento')" class="cursor-pointer group p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-navy-950 transition">
+                                <div class="flex justify-between text-slate-700 dark:text-slate-300 mb-1.5">
+                                    <span class="group-hover:text-indigo-400 font-bold transition">Em Andamento</span>
+                                    <span id="bar-val-andamento" class="font-bold font-mono text-indigo-400">0 (R$ 0,00)</span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-navy-950 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-slate-800 shadow-inner">
+                                    <div id="bar-prog-andamento" class="bar-dinamica bg-indigo-500 h-full w-0 rounded-full shadow-sm"></div>
+                                </div>
+                            </div>
+
+                            <div onclick="abrirGavetaDashboard('Enviado', 'Propostas Pendentes')" class="cursor-pointer group p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-navy-950 transition">
+                                <div class="flex justify-between text-slate-700 dark:text-slate-300 mb-1.5">
+                                    <span class="group-hover:text-gold-500 font-bold transition">Pendentes (Enviados)</span>
+                                    <span id="bar-val-enviado" class="font-bold font-mono text-gold-500">0 (R$ 0,00)</span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-navy-950 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-slate-800 shadow-inner">
+                                    <div id="bar-prog-enviado" class="bar-dinamica bg-gold-500 h-full w-0 rounded-full shadow-sm"></div>
+                                </div>
+                            </div>
+
+                            <div onclick="abrirGavetaDashboard('Recusado', 'Propostas Recusadas')" class="cursor-pointer group p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-navy-950 transition">
+                                <div class="flex justify-between text-slate-700 dark:text-slate-300 mb-1.5">
+                                    <span class="group-hover:text-rose-500 font-bold transition">Recusados</span>
+                                    <span id="bar-val-recusado" class="font-bold font-mono text-rose-500">0 (R$ 0,00)</span>
+                                </div>
+                                <div class="w-full bg-slate-100 dark:bg-navy-950 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200 dark:border-slate-800 shadow-inner">
+                                    <div id="bar-prog-recusado" class="bar-dinamica bg-rose-500 h-full w-0 rounded-full shadow-sm"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div onclick="abrirGavetaDashboard('', 'Todos os Orçamentos Emitidos')" class="text-[11px] text-slate-500 text-center pt-2 border-t border-slate-200 dark:border-slate-800 cursor-pointer hover:text-slate-900 dark:hover:text-white transition font-medium">
+                            Total Emitido: <strong id="dash-total-emitidos" class="text-slate-900 dark:text-white">0</strong> propostas
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 2: ORÇAMENTOS -->
+            <section id="aba-orcamentos" class="hidden aba-animada space-y-6">
+                <div id="visao-lista-orcamentos" class="space-y-6">
+                    <div class="flex justify-between items-center bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Orçamentos</h2>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Gerencie propostas, crie novos documentos e acompanhe status.</p>
+                        </div>
+                        <button onclick="abrirWizardNovoOrcamentoLimpo()" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-4 py-2 rounded-xl shadow-sm transition active:scale-95 flex items-center gap-2 text-xs">
+                            <i class="fa-solid fa-plus"></i> Novo Orçamento
+                        </button>
+                    </div>
+
+                    <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl space-y-4 shadow-sm">
+                        <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lista de Propostas</span>
+                            <input type="text" id="inputBuscaGeralOrc" oninput="filtrarTabelaGeralOrcamentos(this.value)" placeholder="Buscar orçamento..." class="bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 text-xs px-3.5 py-2 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+                        
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                                        <th class="py-3 px-3">Nº Orçamento</th>
+                                        <th class="py-3 px-3">Obra / Empreendimento</th>
+                                        <th class="py-3 px-3">Cliente</th>
+                                        <th class="py-3 px-3 text-right">Total (R$)</th>
+                                        <th class="py-3 px-3 text-center">Alterar Status</th>
+                                        <th class="py-3 px-3 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaGeralOrcamentosBody" class="divide-y divide-slate-200 dark:divide-slate-800/60">
+                                    <tr>
+                                        <td colspan="6" class="py-6 text-center text-slate-500 italic">Carregando orçamentos...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Wizard -->
+                <div id="visao-wizard-orcamento" class="hidden space-y-6">
+                    <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-4 no-print shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span id="wizardTitle">Orçamento</span>
+                                    <span class="text-xs font-mono destaque-orc-num" id="orcNumberDisplay">ORC-2026-0001</span>
+                                </h3>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Preencha os dados da proposta comercial.</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-navy-950 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
+                                    <span class="text-slate-400 font-semibold">Status:</span>
+                                    <select id="orcStatusSelect" class="bg-transparent text-gold-500 font-bold outline-none cursor-pointer">
+                                        <option value="Enviado">Enviado (Pendente)</option>
+                                        <option value="Em andamento">Em andamento</option>
+                                        <option value="Aprovado">Concluído / Aprovado</option>
+                                        <option value="Recusado">Recusado</option>
+                                    </select>
+                                </div>
+                                <span class="text-xs font-bold text-slate-400" id="etapaIndicador">Etapa 1 de 4</span>
+                                <button onclick="fecharWizardVoltarLista()" class="text-slate-500 hover:text-slate-900 dark:hover:text-white text-xs px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 transition">
+                                    <i class="fa-solid fa-xmark"></i> Fechar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-4 gap-2">
+                            <div id="step-bar-1" class="h-1.5 rounded-full bg-gold-600 transition-all"></div>
+                            <div id="step-bar-2" class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-all"></div>
+                            <div id="step-bar-3" class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-all"></div>
+                            <div id="step-bar-4" class="h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-all"></div>
+                        </div>
+                    </div>
+
+                    <!-- ETAPA 1 -->
+                    <div id="etapa-conteudo-1" class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl space-y-4 no-print shadow-sm">
+                        <!-- Título Preto Solicitado -->
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                            <i class="fa-solid fa-user-gear text-gold-500"></i> 1. Cliente e Obra
+                        </h4>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div class="space-y-1">
+                                <label class="block text-slate-700 dark:text-slate-300 font-semibold">Nome da Obra / Empreendimento *</label>
+                                <input type="text" id="obraName" placeholder="Ex: Pintura Residencial Roma" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-700 dark:text-slate-300 font-semibold">Cliente *</label>
+                                <input type="text" id="clientName" placeholder="Ex: Jean C Cunha / Deziderio" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-500">A/C (Contato / Responsável)</label>
+                                <input type="text" id="clientContact" placeholder="Ex: Deziderio Pereira" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-500">CPF / CNPJ</label>
+                                <input type="text" id="clientDoc" placeholder="30.654.467/0001-16" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-500">Telefone / Celular</label>
+                                <input type="text" id="clientPhone" placeholder="(17) 99283-5555" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-500">Local / Endereço da Obra</label>
+                                <input type="text" id="clientAddress" placeholder="Bady Bassitt - SP" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-500">Data de Emissão</label>
+                                <input type="date" id="orcDate" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-500">Validade / Medição</label>
+                                <input type="text" id="orcMedicao" value="Medições Quinzenais ou Mensais" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ETAPA 2 -->
+                    <div id="etapa-conteudo-2" class="hidden bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl space-y-4 no-print shadow-sm">
+                        <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                            <!-- Título Preto Solicitado -->
+                            <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-gold-500"></i> 2. Serviços e Locais/Áreas
+                            </h4>
+                            <div class="flex gap-2">
+                                <button onclick="abrirModalBibliotecaServicos()" class="bg-slate-100 dark:bg-navy-950 hover:bg-slate-800 hover:text-white text-gold-600 border border-gold-500/30 font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm">
+                                    <i class="fa-solid fa-book-bookmark"></i> Serviços Pré-Cadastrados
+                                </button>
+                                <button onclick="adicionarNovoItemServico()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm">
+                                    <i class="fa-solid fa-plus"></i> Adicionar Item
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                        <th class="p-2.5 w-32">Local / Área</th>
+                                        <th class="p-2.5">Descrição do Serviço / Material</th>
+                                        <th class="p-2.5 w-24 text-center">Un.</th>
+                                        <th class="p-2.5 w-24 text-center">Qtd</th>
+                                        <th class="p-2.5 w-28 text-right">Unitário (R$)</th>
+                                        <th class="p-2.5 w-28 text-right">Total (R$)</th>
+                                        <th class="p-2.5 w-12 text-center">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabelaItensEditorBody" class="divide-y divide-slate-200 dark:divide-slate-800"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- ETAPA 3 -->
+                    <div id="etapa-conteudo-3" class="hidden bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl space-y-4 no-print shadow-sm">
+                        <!-- Título Preto Solicitado -->
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+                            <i class="fa-solid fa-credit-card text-gold-500"></i> 3. Condições de Pagamento e Anotações
+                        </h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                            <div class="space-y-1">
+                                <label class="block text-slate-700 dark:text-slate-300 font-semibold">Forma de Pagamento</label>
+                                <select id="paymentMethodSelect" onchange="tratarTrocaMetodoPagamento()" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm cursor-pointer">
+                                    <option value="PIX">PIX / Transferência Instantânea</option>
+                                    <option value="CartaoCredito">Cartão de Crédito</option>
+                                    <option value="CartaoDebito">Cartão de Débito</option>
+                                    <option value="Dinheiro">Dinheiro / Espécie</option>
+                                    <option value="Boleto">Boleto / Transferência Bancária</option>
+                                </select>
+                            </div>
+                            
+                            <div id="boxCartaoCreditoConfig" class="hidden md:col-span-2 bg-slate-50 dark:bg-navy-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
+                                <p class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wide"><i class="fa-solid fa-gear text-gold-500"></i> Configuração do Cartão de Crédito</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div class="space-y-1">
+                                        <label class="block text-slate-400">Nº de Parcelas</label>
+                                        <input type="text" id="ccInstallments" value="10x" oninput="atualizarTotaisCalculados()" class="w-full bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="block text-slate-400">Taxa Maquininha (%)</label>
+                                        <input type="number" step="0.1" id="ccFeePercent" value="2.5" oninput="atualizarTotaisCalculados()" class="w-full bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1" id="boxPixKey">
+                                <label class="block text-slate-400">Chave PIX / CNPJ</label>
+                                <input type="text" id="pixKey" value="30.654.467/0001-16 (CNPJ - Deziderio)" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-400">Desconto (R$)</label>
+                                <input type="number" step="0.01" id="discountInput" value="0" oninput="atualizarTotaisCalculados()" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-slate-400">Sinal / Entrada (%)</label>
+                                <input type="number" id="downPaymentPercent" value="50" oninput="atualizarTotaisCalculados()" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            </div>
+
+                            <div class="space-y-1 md:col-span-2 pt-2">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-slate-700 dark:text-slate-300 font-semibold">Observações para o Cliente (Visíveis no PDF)</label>
+                                    <button onclick="abrirModalObservacoesProntas()" type="button" class="bg-slate-100 dark:bg-navy-950 hover:bg-slate-800 hover:text-white text-gold-600 border border-gold-500/30 font-bold px-3 py-1 rounded-xl text-[11px] transition flex items-center gap-1 shadow-sm">
+                                        <i class="fa-solid fa-book-bookmark"></i> Modelos Prontos
+                                    </button>
+                                </div>
+                                <textarea id="notesInput" rows="3" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm"></textarea>
+                            </div>
+
+                            <div class="space-y-2 md:col-span-2 pt-2 border-t border-slate-200 dark:border-slate-800">
+                                <label class="block text-slate-900 dark:text-white font-semibold"><i class="fa-solid fa-lock text-gold-500"></i> Anotações Internas (Histórico com Data/Hora)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="inputNovoComentarioUnico" placeholder="Digite uma anotação rápida..." class="flex-1 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                                    <button onclick="adicionarComentarioHistorico()" type="button" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm">
+                                        <i class="fa-solid fa-plus text-sm"></i> Adicionar
+                                    </button>
+                                </div>
+                                <input type="hidden" id="internalNotesInput">
+                                <div id="listaHistoricoComentarios" class="space-y-1.5 pt-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ETAPA 4: REVISÃO & FOLHA A4 -->
+                    <div id="etapa-conteudo-4" class="hidden space-y-4">
+                        <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-3 no-print shadow-sm">
+                            <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-file-pdf text-gold-500"></i> 4. Revisão e Documento Comercial
+                                </h4>
+                                <div class="flex gap-2">
+                                    <button onclick="salvarOrcamentoNoBanco()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-2 shadow-md active:scale-95">
+                                        <i class="fa-solid fa-floppy-disk"></i> Salvar no Banco
+                                    </button>
+                                    <button onclick="window.print()" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-2 shadow-md active:scale-95">
+                                        <i class="fa-solid fa-print"></i> Imprimir / Gerar PDF
+                                    </button>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-500">Documento formatado para suporte automático a multi-páginas A4.</p>
+                        </div>
+
+                        <!-- FOLHA DE PROPOSTA COMERCIAL A4 -->
+                        <div class="folha-orcamento-a4 bg-white text-slate-900 p-8 rounded-xl shadow-xl space-y-4 text-xs max-w-4xl mx-auto border border-slate-200 print-only">
+                            <div class="flex justify-between items-center border-b-2 border-navy-900 pb-3">
+                                <div class="flex items-center gap-3">
+                                    <div id="containerLogoDocumento" class="h-12 max-w-[140px] bg-transparent text-gold-600 rounded-xl font-bold flex items-center justify-center overflow-hidden shrink-0">
+                                        <i class="fa-solid fa-paint-roller text-base" id="iconePadraoLogo"></i>
+                                        <img id="imgLogoDocumento" src="" alt="Logo" class="h-full w-auto object-contain hidden">
+                                    </div>
+                                    <div>
+                                        <h1 class="text-base font-extrabold tracking-tight text-navy-900" id="docEmpresaNome">DEZIDERIO</h1>
+                                        <p class="text-[10px] font-semibold text-gold-700 uppercase tracking-wider">Especialista em Pintura e Acabamento</p>
+                                        <p class="text-[9px] text-slate-500" id="docEmpresaInfo">CNPJ: 30.654.467/0001-16 · Rua Renato Pereira de Campos, nº 2489</p>
+                                    </div>
+                                </div>
+                                <div class="text-right bg-navy-900 text-white px-4 py-2.5 rounded-xl shadow-md border border-gold-500/30">
+                                    <p class="text-[9px] uppercase font-bold tracking-widest text-gold-400">Orçamento</p>
+                                    <p class="font-mono font-bold text-sm text-white destaque-orc-num" id="previewOrcNumber">ORC-2026-0001</p>
+                                    <p class="text-[10px] text-slate-300 mt-0.5" id="previewOrcDate">Data: --/--/----</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-[11px]">
+                                <div class="space-y-0.5">
+                                    <p class="font-bold text-slate-400 uppercase text-[8px] tracking-wider">Obra / Empreendimento:</p>
+                                    <p id="previewObraName" class="font-bold text-slate-900 text-xs">---</p>
+                                    <p id="previewClientAddress" class="text-slate-600 text-[10px]">Local: ---</p>
+                                    <p class="text-slate-500 text-[10px]">Medição: Medições Quinzenais ou Mensais</p>
+                                </div>
+                                <div class="space-y-0.5 border-l border-slate-200 pl-4">
+                                    <p class="font-bold text-slate-400 uppercase text-[8px] tracking-wider">Cliente / Contratante:</p>
+                                    <p id="previewClientName" class="font-bold text-slate-900 text-xs">---</p>
+                                    <p class="text-slate-600 text-[10px]" id="previewClientContact">Contato: ---</p>
+                                    <p class="text-slate-600 text-[10px]" id="previewClientDocInfo">CNPJ/CPF: ---</p>
+                                    <p class="text-slate-600 text-[10px]" id="previewClientPhone">Tel: ---</p>
+                                </div>
+                            </div>
+
+                            <table class="w-full text-left border-collapse text-[11px] tabela-servicos-pdf">
+                                <thead>
+                                    <tr class="bg-navy-900 text-white text-[10px]">
+                                        <th class="py-2 px-2.5 font-bold uppercase tracking-wider rounded-l">#</th>
+                                        <th class="py-2 px-2.5 font-bold uppercase tracking-wider">Local/Área</th>
+                                        <th class="py-2 px-2.5 font-bold uppercase tracking-wider">Descrição do Serviço / Material</th>
+                                        <th class="py-2 px-2.5 font-bold uppercase tracking-wider text-center">Un.</th>
+                                        <th class="py-2 px-2.5 font-bold uppercase tracking-wider text-center">Qtd</th>
+                                        <th class="py-2 px-2.5 font-bold uppercase tracking-wider text-right">Valor/Un (R$)</th>
+                                        <th class="py-2 px-2.5 font-bold uppercase tracking-wider text-right rounded-r">Total (R$)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="previewItensBody" class="divide-y divide-slate-200"></tbody>
+                            </table>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 avoid-break">
+                                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 flex gap-4 items-center">
+                                    <div class="flex-1 space-y-1">
+                                        <p class="font-bold text-slate-800 text-[11px]">Pagamento:</p>
+                                        <p class="text-slate-600 text-[10px]" id="previewPaymentDesc">PIX / Transferência Instantânea</p>
+                                        <p class="text-slate-700 text-[10px] font-semibold" id="previewPixKeyDisplay">Chave PIX: 30.654.467/0001-16 (CNPJ - Deziderio)</p>
+                                        <p class="text-[9px] text-slate-500">Condição: Entrada de <span id="previewLabelPorcentagem">50</span>% e Restante no Término.</p>
+                                    </div>
+                                    <div id="boxQrCodeVisual" class="w-16 h-16 bg-white border border-slate-300 p-1 rounded-lg flex flex-col items-center justify-center shadow-inner shrink-0 overflow-hidden">
+                                        <div id="qrcodeIconDefault" class="w-full h-full bg-navy-900 text-white flex items-center justify-center text-[9px] font-bold text-center p-0.5 rounded">
+                                            <i class="fa-solid fa-qrcode text-lg text-gold-400"></i>
+                                        </div>
+                                        <img id="imgQrcodeDocumento" src="" alt="QR Code" class="w-full h-full object-cover hidden">
+                                    </div>
+                                </div>
+
+                                <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-1 text-[11px]">
+                                    <div class="flex justify-between text-slate-600">
+                                        <span>Subtotal:</span>
+                                        <span id="previewSubtotal">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between text-rose-600 font-semibold">
+                                        <span>Desconto:</span>
+                                        <span id="previewDiscount">- R$ 0,00</span>
+                                    </div>
+                                    <div id="linhaTaxaMaquininha" class="flex justify-between text-gold-700 font-semibold hidden">
+                                        <span id="labelTaxaMaq">Taxa Maquininha (2.5%):</span>
+                                        <span id="previewTaxaMaqValor">+ R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between text-navy-900 font-bold text-xs border-t border-slate-200 pt-1.5">
+                                        <span>Total Geral:</span>
+                                        <span id="previewTotal" class="text-gold-700">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between text-navy-800 font-semibold pt-1 border-t border-dashed border-slate-200">
+                                        <span id="labelEntradaText">Entrada (50%):</span>
+                                        <span id="previewValorEntrada" class="text-gold-700">R$ 0,00</span>
+                                    </div>
+                                    <div class="flex justify-between text-slate-600">
+                                        <span>Restante no Término:</span>
+                                        <span id="previewValorRestante">R$ 0,00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-amber-500/5 border-l-4 border-gold-600 p-3 rounded-r-xl space-y-0.5 text-[10px] avoid-break">
+                                <p class="font-bold text-slate-800">Observações:</p>
+                                <p class="text-slate-600 leading-tight break-words whitespace-pre-wrap overflow-hidden" id="previewNotesText">O serviço será executado de forma profissional.</p>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-12 pt-6 mt-4 border-t border-slate-300 text-center text-[11px] avoid-break">
+                                <div>
+                                    <div class="border-b border-slate-400 pb-3 mb-1"></div>
+                                    <p class="font-bold text-slate-800" id="docAssinaturaEmpresa">Deziderio - Pintura e Acabamento</p>
+                                    <p class="text-[9px] text-slate-500">Responsável Técnico</p>
+                                </div>
+                                <div>
+                                    <div class="border-b border-slate-400 pb-3 mb-1"></div>
+                                    <p class="font-bold text-slate-800" id="footerClientName">Jean C Cunha / Deziderio</p>
+                                    <p class="text-[9px] text-slate-500">Aceite do Cliente</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="painelComentariosAprovado" class="hidden bg-white dark:bg-navy-900 border border-emerald-500/30 p-5 rounded-xl space-y-3 no-print shadow-sm">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-900 dark:text-white"><i class="fa-solid fa-lock text-emerald-500 mr-1"></i> Orçamento aprovado · somente leitura</h4>
+                                <p class="text-[11px] text-slate-500 mt-1">Os dados comerciais estão bloqueados. Você ainda pode registrar comentários internos.</p>
+                            </div>
+                            <span class="text-[10px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-lg">Aprovado</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="inputComentarioAprovado" maxlength="1000" placeholder="Adicionar comentário interno..." class="flex-1 bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            <button type="button" onclick="adicionarComentarioAprovado()" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition"><i class="fa-solid fa-plus"></i> Registrar</button>
+                        </div>
+                        <div id="listaComentariosAprovado" class="space-y-1.5"></div>
+                    </div>
+
+                    <!-- BOTÕES DE CONTROLE -->
+                    <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl flex justify-between items-center no-print shadow-sm">
+                        <button id="btnWizardAnterior" onclick="wizardVoltarEtapa()" class="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-white font-bold px-4 py-2 rounded-xl text-xs transition disabled:opacity-35 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-arrow-left"></i> Etapa Anterior
+                        </button>
+                        <button id="btnWizardProximo" onclick="wizardAvancarEtapa()" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition flex items-center gap-1 shadow-md">
+                            Próxima Etapa <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 3: SERVIÇOS -->
+            <section id="aba-servicos" class="hidden aba-animada space-y-6">
+                <div class="flex justify-between items-center bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-900 dark:text-white">Base de Dados de Serviços</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">Cadastre e gerencie os preços e itens padrão que abastecem a criação de orçamentos.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-4 shadow-sm">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-square-plus text-gold-500"></i> <span id="tituloFormServico">Cadastrar Novo Serviço Padrão</span>
+                    </h3>
+                    <input type="hidden" id="libEditId" value="">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+                        <div class="space-y-1 md:col-span-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Local / Área *</label>
+                            <input type="text" id="libMasterArea" placeholder="Ex: FACHADA, APTOS" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white uppercase outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+                        <div class="space-y-1 md:col-span-2">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Descrição do Serviço *</label>
+                            <input type="text" id="libMasterDesc" placeholder="Ex: Aplicação de selador e tintas acrílicas" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Unidade *</label>
+                            <select id="libMasterUnit" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                                <option value="m²">m²</option>
+                                <option value="un">un</option>
+                                <option value="pç">pç</option>
+                                <option value="cj">cj</option>
+                                <option value="vg">vg</option>
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Preço Unitário (R$) *</label>
+                            <input type="number" step="0.01" id="libMasterPrice" placeholder="0.00" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+                        <button id="btnCancelarEdicaoServico" onclick="limparFormServicoMaster()" type="button" class="hidden bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold px-3.5 py-1.5 rounded-xl text-xs transition">
+                            Cancelar Edição
+                        </button>
+                        <button onclick="salvarServicoMaster()" type="button" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition flex items-center gap-1.5 shadow-sm">
+                            <i class="fa-solid fa-floppy-disk"></i> Salvar na Base de Dados
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-4 shadow-sm">
+                    <div class="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white uppercase">Serviços na Base (<span id="countServicosMaster">0</span>)</span>
+                        <input type="text" id="inputBuscaServicosMaster" oninput="filtrarAbaServicosMaster(this.value)" placeholder="Buscar por área ou serviço..." class="bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 text-xs px-3.5 py-1.5 rounded-xl text-slate-800 dark:text-slate-200 outline-none focus:border-gold-500 shadow-sm">
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-200 dark:border-slate-800">
+                                    <th class="py-3 px-3">Local / Área</th>
+                                    <th class="py-3 px-3">Descrição do Serviço</th>
+                                    <th class="py-3 px-3 text-center">Unidade</th>
+                                    <th class="py-3 px-3 text-right">Preço Padrão (R$)</th>
+                                    <th class="py-3 px-3 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaServicosMasterBody" class="divide-y divide-slate-200 dark:divide-slate-800/60"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 4: ATIVIDADES -->
+            <section id="aba-atividades" class="hidden aba-animada space-y-6">
+                <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Atividades e Timeline</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Histórico completo de alterações, status e notas internas.</p>
+                </div>
+
+                <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm space-y-4">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-800 pb-3">Registro Global de Atividades</h3>
+                    <div id="listaAtividadesGlobal" class="space-y-3 text-xs">
+                        <p class="text-slate-500 italic">Carregando atividades...</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ABA 5: CONFIGURAÇÕES DA EMPRESA -->
+            <section id="aba-configuracoes" class="hidden aba-animada space-y-6">
+                <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl shadow-sm">
+                    <h2 class="text-xl font-bold text-slate-900 dark:text-white">Configurações da Empresa & Documento</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Altere os dados, logotipo e QR code que refletirão em todos os PDFs.</p>
+                </div>
+
+                <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl space-y-4 shadow-sm max-w-2xl">
+                    <div class="grid grid-cols-1 gap-4 text-xs">
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Razão Social / Nome da Empresa *</label>
+                            <input type="text" id="configRazaoSocial" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">CNPJ *</label>
+                            <input type="text" id="configCnpj" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Endereço Completo *</label>
+                            <input type="text" id="configEndereco" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Telefone / Contato *</label>
+                            <input type="text" id="configTelefone" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Chave PIX Principal *</label>
+                            <input type="text" id="configPix" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Logomarca da Empresa</label>
+                            <div class="flex items-center gap-3">
+                                <input type="file" id="inputArquivoLogo" accept="image/*" onchange="converterArquivoParaBase64(this, 'logo')" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 outline-none file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold-600 file:text-slate-950 hover:file:bg-gold-700 cursor-pointer shadow-sm">
+                            </div>
+                            <input type="hidden" id="configLogoUrl">
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">QR Code do PIX</label>
+                            <div class="flex items-center gap-3">
+                                <input type="file" id="inputArquivoQrcode" accept="image/*" onchange="converterArquivoParaBase64(this, 'qrcode')" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 outline-none file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-gold-600 file:text-slate-950 hover:file:bg-gold-700 cursor-pointer shadow-sm">
+                            </div>
+                            <input type="hidden" id="configQrcodeUrl">
+                        </div>
+
+                        <div class="space-y-1">
+                            <label class="block text-slate-700 dark:text-slate-300 font-semibold">Observações Padrão para Novos Orçamentos *</label>
+                            <textarea id="configObsPadrao" rows="3" class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm"></textarea>
+                        </div>
+                    </div>
+                    <div class="pt-4 flex justify-end">
+                        <button onclick="salvarConfiguracoesEmpresa()" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-5 py-2 rounded-xl text-xs transition shadow-md active:scale-95">
+                            <i class="fa-solid fa-floppy-disk"></i> Salvar Configurações
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- GAVETA LATERAL (DRAWER) DE DETALHES DO DASHBOARD -->
+    <div id="drawerDashboard" onclick="if(event.target === this) fecharGavetaDashboard()" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden transition-opacity duration-300 ease-out">
+        <div id="drawerPanel" class="absolute right-0 top-0 h-full w-full max-w-xl bg-white dark:bg-navy-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300 ease-out">
+            <div class="p-5 bg-slate-100 dark:bg-navy-950 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <div>
+                    <h3 id="drawerTitulo" class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        <i class="fa-solid fa-filter text-gold-500"></i> Detalhes do Status
+                    </h3>
+                    <p class="text-[11px] text-slate-400">Lista filtrada instantaneamente pelo painel.</p>
+                </div>
+                <button onclick="fecharGavetaDashboard()" class="text-slate-400 hover:text-white text-lg font-bold px-2">&times;</button>
+            </div>
+            
+            <div class="p-5 flex-1 overflow-y-auto space-y-3" id="drawerListaConteudo"></div>
+
+            <div class="p-4 bg-slate-100 dark:bg-navy-950 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-xs text-slate-500">
+                <span id="drawerTotalItens">0 itens encontrados</span>
+                <button onclick="fecharGavetaDashboard()" class="px-4 py-1.5 bg-slate-200 dark:bg-slate-800 font-semibold rounded-xl text-slate-700 dark:text-slate-200">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL BANCO DE DADOS -->
+    <div id="historicoModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden relative z-10 text-slate-800 dark:text-slate-100">
+            <div class="bg-slate-100 dark:bg-navy-950 p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-sm flex items-center gap-2 text-slate-900 dark:text-white">
+                    <i class="fa-solid fa-database text-gold-500"></i> Orçamentos Salvos no Banco de Dados
+                </h3>
+                <button onclick="fecharModalHistorico()" class="text-slate-400 hover:text-white font-bold text-lg px-2">&times;</button>
+            </div>
+            <div class="p-4 space-y-4 overflow-y-auto flex-1">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-50 dark:bg-navy-950 text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
+                                <th class="p-3">Nº Orçamento</th>
+                                <th class="p-3">Obra</th>
+                                <th class="p-3">Cliente</th>
+                                <th class="p-3 text-right">Total (R$)</th>
+                                <th class="p-3 text-center">Status & Atualização</th>
+                                <th class="p-3 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaHistoricoBody" class="divide-y divide-slate-200 dark:divide-slate-800"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bg-slate-100 dark:bg-navy-950 p-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button onclick="fecharModalHistorico()" class="px-4 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 rounded-xl">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL BIBLIOTECA -->
+    <div id="bibliotecaModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden relative z-10 text-slate-800 dark:text-slate-100">
+            <div class="bg-slate-100 dark:bg-navy-950 p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-sm flex items-center gap-2 text-slate-900 dark:text-white">
+                    <i class="fa-solid fa-book-bookmark text-gold-500"></i> Biblioteca de Serviços Pré-Cadastrados
+                </h3>
+                <button onclick="fecharModalBiblioteca()" class="text-slate-400 hover:text-white font-bold text-lg px-2">&times;</button>
+            </div>
+            <div class="p-5 space-y-4 overflow-y-auto flex-1">
+                <div class="bg-slate-50 dark:bg-navy-950 p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
+                    <p class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wide"><i class="fa-solid fa-plus text-gold-500"></i> Cadastrar Novo Serviço na Biblioteca</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <input type="text" id="libNewArea" placeholder="Ex: FACHADA OU APTOS" class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white uppercase outline-none focus:border-gold-500 shadow-sm">
+                        <input type="text" id="libNewDesc" placeholder="Ex: Aplicação de selador e tinta acrílica" class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                        <select id="libNewUnit" class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            <option value="m²">m²</option>
+                            <option value="un">un</option>
+                            <option value="pç">pç</option>
+                            <option value="cj">cj</option>
+                        </select>
+                        <div class="flex gap-2">
+                            <input type="number" step="0.01" id="libNewPrice" placeholder="0.00" class="w-full bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3.5 py-2 text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                            <button onclick="salvarNovoServicoNaBiblioteca()" class="bg-slate-800 hover:bg-gold-600 hover:text-slate-950 border border-slate-700 text-white font-bold px-4 py-2 rounded-xl transition text-xs whitespace-nowrap shadow-sm">Cadastrar</button>
+                        </div>
+                    </div>
+                </div>
+                <input type="text" id="libSearchInput" oninput="filtrarBibliotecaServicos()" placeholder="Pesquisar serviço..." class="w-full bg-slate-50 dark:bg-navy-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-800 dark:text-slate-200 outline-none focus:border-gold-500 shadow-sm">
+                <div class="flex justify-between items-center px-1 text-xs text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-2">
+                    <label class="flex items-center gap-2 cursor-pointer font-semibold">
+                        <input type="checkbox" id="checkMarcarTodos" onclick="toggleMarcarTodosBiblioteca(this)" class="w-4 h-4 rounded bg-white dark:bg-navy-900 border-slate-300 dark:border-slate-700 text-gold-600 focus:ring-0">
+                        Marcar Todos
+                    </label>
+                    <span id="contadorSelecionadosLib">0 selecionados</span>
+                </div>
+                <div id="listaServicosBibliotecaContainer" class="space-y-2"></div>
+            </div>
+            <div class="bg-slate-100 dark:bg-navy-950 p-3.5 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center">
+                <button onclick="fecharModalBiblioteca()" class="px-4 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 rounded-xl">Cancelar</button>
+                <button onclick="inserirServicosSelecionadosNoOrcamento()" class="bg-gold-600 hover:bg-gold-700 text-slate-950 font-bold px-4 py-1.5 rounded-xl text-xs transition flex items-center gap-1.5 shadow-md">
+                    <i class="fa-solid fa-circle-plus"></i> Inserir Selecionados no Orçamento
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL OBSERVAÇÕES -->
+    <div id="obsModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl max-w-lg w-full flex flex-col overflow-hidden relative z-10 text-slate-800 dark:text-slate-100">
+            <div class="bg-slate-100 dark:bg-navy-950 p-4 flex justify-between items-center border-b border-slate-200 dark:border-slate-800">
+                <h3 class="font-bold text-sm flex items-center gap-2 text-slate-900 dark:text-white">
+                    <i class="fa-solid fa-book-bookmark text-gold-500"></i> Modelos Prontos de Observações
+                </h3>
+                <button onclick="fecharModalObservacoes()" class="text-slate-400 hover:text-white font-bold text-lg px-2">&times;</button>
+            </div>
+            <div class="p-4 space-y-4 max-h-[70vh] overflow-y-auto">
+                <div class="bg-slate-50 dark:bg-navy-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                    <p class="text-[11px] font-bold text-slate-900 dark:text-white uppercase"><i class="fa-solid fa-plus text-gold-500"></i> Cadastrar Novo Modelo</p>
+                    <input type="text" id="obsNewTitle" placeholder="Título (ex: Garantia Estendida)" class="w-full bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm">
+                    <textarea id="obsNewDesc" rows="2" placeholder="Descritivo completo..." class="w-full bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white outline-none focus:border-gold-500 shadow-sm"></textarea>
+                    <button onclick="salvarNovoModeloObs()" class="w-full bg-slate-800 hover:bg-gold-600 hover:text-slate-950 border border-slate-700 text-white font-bold py-2 rounded-xl text-xs transition shadow-sm">Salvar Novo Modelo</button>
+                </div>
+                <div id="listaModelosObsContainer" class="space-y-2"></div>
+            </div>
+            <div class="bg-slate-100 dark:bg-navy-950 p-3 border-t border-slate-200 dark:border-slate-800 flex justify-end">
+                <button onclick="fecharModalObservacoes()" class="px-4 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 rounded-xl">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmação -->
+<div id="modalConfirmacaoGlobal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-navy-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+        <div class="flex items-center gap-4">
+            <div id="modalConfirmIcone" class="fa-solid fa-triangle-exclamation text-amber-500 text-3xl"></div>
+            <div>
+                <h3 id="modalConfirmTitulo" class="text-base font-bold text-slate-900 dark:text-white">Confirmação</h3>
+                <p id="modalConfirmMensagem" class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Tem certeza que deseja realizar esta ação?</p>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button onclick="fecharModalConfirmacao()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs transition">
+                Cancelar
+            </button>
+            <button id="btnConfirmarModal" onclick="executarConfirmacaoModal()" class="px-4 py-2 bg-gold-600 hover:bg-gold-700 text-white font-bold rounded-xl text-xs transition shadow-sm">
+                Confirmar
+            </button>
+        </div>
+    </div>
+</div>
+
+    <!-- JS Estático -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
