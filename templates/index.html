@@ -89,6 +89,76 @@
             #modalFinanceiroOrcamento .grid-cols-2 { grid-template-columns: 1fr 1fr; }
         }
     </style>
+
+    <!-- Ajustes pontuais do wizard em telas pequenas -->
+    <style>
+      @media (max-width: 768px) {
+        #visao-wizard-orcamento { min-width: 0; width: 100%; }
+        #visao-wizard-orcamento > .bg-white:first-child { padding: 1rem !important; gap: .85rem !important; }
+        #visao-wizard-orcamento > .bg-white:first-child > div:first-child {
+          display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: .85rem !important;
+        }
+        #visao-wizard-orcamento > .bg-white:first-child > div:first-child > div:last-child {
+          width: 100%; display: grid !important; grid-template-columns: minmax(0,1fr) auto; gap: .6rem !important; align-items: center;
+        }
+        #visao-wizard-orcamento #wizardTitle { font-size: 1rem; }
+        #visao-wizard-orcamento #orcNumberDisplay { display: inline-block; overflow-wrap: anywhere; }
+        #visao-wizard-orcamento #orcStatusSelect { max-width: 100%; min-width: 0; }
+        #visao-wizard-orcamento #etapaIndicador { justify-self: end; white-space: nowrap; }
+        #visao-wizard-orcamento > .bg-white:first-child > div:first-child > div:last-child > button { grid-column: 1 / -1; width: 100%; }
+
+        #etapa-conteudo-1, #etapa-conteudo-2, #etapa-conteudo-3 { padding: 1rem !important; }
+        #etapa-conteudo-2 > div:first-child {
+          display: flex !important; flex-direction: column !important; align-items: stretch !important; gap: .75rem !important;
+        }
+        #etapa-conteudo-2 > div:first-child h4 { line-height: 1.45; }
+        #etapa-conteudo-2 > div:first-child > div {
+          display: grid !important; grid-template-columns: minmax(0,1fr) !important; width: 100%; gap: .55rem !important;
+        }
+        #etapa-conteudo-2 > div:first-child > div button {
+          width: 100% !important; min-height: 44px; justify-content: center; white-space: normal; text-align: center; line-height: 1.25;
+        }
+        #etapa-conteudo-2 .overflow-x-auto { max-width: 100% !important; width: 100%; border: 1px solid var(--border); border-radius: 10px; }
+        #etapa-conteudo-2 table { min-width: 680px; }
+        #etapa-conteudo-2 table th, #etapa-conteudo-2 table td { white-space: nowrap; }
+
+        #etapa-conteudo-3 .flex.justify-between { align-items: flex-start; gap: .5rem; }
+        #etapa-conteudo-3 #inputNovoComentarioUnico { min-width: 0; }
+        #etapa-conteudo-3 #listaHistoricoComentarios { overflow-wrap: anywhere; }
+
+        #visao-wizard-orcamento > div:last-child {
+          position: sticky; bottom: .5rem; z-index: 15; gap: .6rem !important; padding: .75rem !important;
+          box-shadow: 0 8px 24px rgba(15,23,42,.12); border-radius: 12px;
+        }
+        #btnWizardAnterior, #btnWizardProximo { min-height: 44px; padding: .7rem .8rem !important; flex: 1 1 0; justify-content: center; }
+        #btnWizardAnterior { white-space: nowrap; }
+        #btnWizardProximo { white-space: normal; }
+
+        #bibliotecaModal { padding: .5rem !important; align-items: stretch !important; }
+        #bibliotecaModal > div {
+          width: 100% !important; max-width: none !important; max-height: calc(100dvh - 1rem) !important;
+          margin: auto !important; min-height: 0; border-radius: 14px;
+        }
+        #bibliotecaModal > div > div:first-child { padding: .85rem !important; gap: .5rem; }
+        #bibliotecaModal > div > div:first-child h3 { font-size: .8rem; line-height: 1.35; }
+        #bibliotecaModal > div > div:nth-child(2) { padding: .85rem !important; min-height: 0; }
+        #bibliotecaModal .grid.grid-cols-1.sm\\:grid-cols-2 { grid-template-columns: minmax(0,1fr) !important; }
+        #bibliotecaModal > div > div:last-child {
+          display: grid !important; grid-template-columns: minmax(0,1fr) !important; gap: .5rem; padding: .75rem !important;
+          padding-bottom: calc(.75rem + env(safe-area-inset-bottom)) !important;
+        }
+        #bibliotecaModal > div > div:last-child button { width: 100%; min-height: 44px; justify-content: center; white-space: normal; }
+        #listaServicosBibliotecaContainer > div { align-items: flex-start !important; gap: .5rem; }
+        #listaServicosBibliotecaContainer label { min-width: 0; align-items: flex-start; }
+        #listaServicosBibliotecaContainer label > div { min-width: 0; overflow-wrap: anywhere; }
+      }
+      @media (max-width: 420px) {
+        #visao-wizard-orcamento > .bg-white:first-child > div:first-child > div:last-child { grid-template-columns: minmax(0,1fr); }
+        #visao-wizard-orcamento #etapaIndicador { justify-self: start; }
+        #btnWizardAnterior, #btnWizardProximo { font-size: 11px !important; }
+      }
+    </style>
+
 </head>
 <body class="bg-[#F4F6F9] dark:bg-navy-950 text-[#334155] dark:text-slate-200 h-full flex overflow-hidden font-sans antialiased selection:bg-gold-500/20 selection:text-gold-600">
 
@@ -127,7 +197,7 @@
 
         <div class="p-4 border-t border-slate-800/80">
             <div class="p-3 rounded-xl bg-navy-900/50 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-                <span>Build 2.0.2</span>
+                <span>Build 2.0.3</span>
                 <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
             </div>
         </div>
