@@ -306,7 +306,7 @@ input:focus, select:focus, textarea:focus {
 
     /* Cards do Dashboard em Coluna Única */
     .grid-cols-5, .grid-cols-4, .grid-cols-3 {
-        grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
     }
 
     /* Tabelas responsivas com rolagem interna limpa */
