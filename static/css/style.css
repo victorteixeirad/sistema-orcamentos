@@ -191,18 +191,19 @@ input:focus, select:focus, textarea:focus {
 }
 
 /* =========================================================
-   PREVIEW DA FOLHA NA TELA (Sem scroll interno travado)
+   DEZIDERIO · PREVIEW E IMPRESSÃO A4 CORRIGIDA
    ========================================================= */
+
 .print-only {
     background: #ffffff !important;
     color: #0f172a !important;
     width: 210mm;
     margin: 0 auto !important;
-    padding: 10mm 14mm 14mm 14mm !important;
+    padding: 10mm 12mm 12mm 12mm !important;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
     border-radius: 4px !important;
     box-sizing: border-box !important;
-    overflow: visible !important; /* Remove qualquer scroll interno */
+    overflow: visible !important;
     height: auto !important;
 }
 
@@ -212,16 +213,23 @@ input:focus, select:focus, textarea:focus {
 .print-only thead tr th { color: #ffffff !important; }
 
 /* =========================================================
-   REGRAS ABSOLUTAS DE IMPRESSÃO / PDF (Multi-Páginas Limpo)
+   REGRAS ABSOLUTAS DE IMPRESSÃO / PDF (Sem barras e sem espaços)
    ========================================================= */
 
-@page {
-    size: A4 portrait;
-    margin: 10mm 10mm 10mm 10mm;
-}
-
 @media print {
-    /* Zera margens, paddings e tamanhos fixos da aplicação para o PDF fluir livremente */
+    /* Configuração da folha A4 física */
+    @page {
+        size: A4 portrait;
+        margin: 8mm;
+    }
+
+    /* Esconde elementos de interface da aplicação */
+    .no-print, header, nav, aside, button, input, select, textarea,
+    #drawerDashboard, #historicoModal, #bibliotecaModal, #obsModal {
+        display: none !important;
+    }
+
+    /* Libera o container principal para não travar a rolagem */
     html, body, main, .flex-1, .overflow-y-auto {
         background: #ffffff !important;
         margin: 0 !important;
@@ -231,49 +239,40 @@ input:focus, select:focus, textarea:focus {
         min-height: auto !important;
         max-height: none !important;
         overflow: visible !important;
-        position: static !important;
-    }
-    
-    /* Oculta elementos de interface desnecessários */
-    .no-print, header, nav, aside, button, input, select, textarea {
-        display: none !important;
     }
 
-    /* A folha A4 assume largura total da página de impressão */
+    /* A folha A4 expande para preencher a página de impressão */
     .print-only {
         width: 100% !important;
         max-width: 100% !important;
         height: auto !important;
-        min-height: auto !important;
         margin: 0 !important;
         padding: 0 !important;
         box-shadow: none !important;
         border: none !important;
-        border-radius: 0 !important;
         overflow: visible !important;
     }
 
-    /* TABELA: Permite quebra limpa e repete o cabeçalho na página seguinte */
+    /* Quebra de páginas limpa na tabela de serviços */
     .tabela-servicos-pdf {
         width: 100% !important;
         border-collapse: collapse !important;
-        page-break-inside: auto !important;
     }
 
     .tabela-servicos-pdf thead {
-        display: table-header-group !important; /* Repete o cabeçalho das colunas nas próximas páginas */
+        display: table-header-group !important;
     }
 
-    .tabela-servicos-pdf tr, .tabela-servicos-pdf td, .tabela-servicos-pdf th {
+    .tabela-servicos-pdf tr {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
 
-    /* BLOCOS IMPORTANTES: Impede que pagamento, totais ou assinaturas cortem ao meio */
+    /* Impede corte no bloco de totais e assinaturas */
     .avoid-break {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        margin-top: 10mm; /* Dá um respiro limpo se cair na página seguinte */
+        margin-top: 5mm;
     }
 }
 
@@ -346,5 +345,75 @@ input:focus, select:focus, textarea:focus {
     /* Wizard / Etapas */
     #visao-wizard-orcamento .grid-cols-4 {
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    }
+}
+
+
+/* Correção complementar: paginação A4 sem alterar o visual em tela */
+@media print {
+    html, body {
+        display: block !important;
+        width: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        scrollbar-width: none !important;
+    }
+
+    body {
+        position: static !important;
+    }
+
+    body > main,
+    body > main > div,
+    body > main .overflow-y-auto,
+    body > main .flex-1 {
+        display: block !important;
+        width: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        position: static !important;
+    }
+
+    * {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    *::-webkit-scrollbar,
+    *::-webkit-scrollbar-thumb,
+    *::-webkit-scrollbar-track {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        background: transparent !important;
+    }
+
+    /* Não criar uma quebra forçada no conjunto Pagamento + Totais.
+       Cada cartão pode permanecer inteiro, sem empurrar ambos para a próxima folha. */
+    .avoid-break {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .tabela-servicos-pdf {
+        page-break-before: auto !important;
+        page-break-after: auto !important;
+    }
+
+    .tabela-servicos-pdf thead {
+        display: table-header-group !important;
+    }
+
+    .tabela-servicos-pdf tbody {
+        display: table-row-group !important;
+    }
+
+    .tabela-servicos-pdf tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
     }
 }
